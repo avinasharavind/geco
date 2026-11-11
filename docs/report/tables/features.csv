@@ -1,0 +1,8 @@
+Group,Count,Examples
+CARQ / storm state,10,"vmax0, pmin0, lat0, lon0, dv6, dv12 …"
+"Interpolated aids (value, 12-h change)",24,"AEMI_vmax, AVNI_vmax, CMCI_vmax, CTCI_vmax, DSHP_vmax, EGRI_vmax …"
+GEFS members (AP01–30),11,"gefs_vmax_mean, gefs_vmax_std, gefs_vmax_p10, gefs_vmax_p90, gefs_n, gefs_mslp_mean …"
+ECMWF members (EE01–50),0,
+Consensus summary,8,"n_aids, ref_vmax, ref_pmin, aid_vmax_std, aid_vmax_range, lat_c …"
+Calendar / basin / lead,3,"lead, basin_ep, doy"
+SHIPS (variant B only),39,"ships_shear, ships_shear_adj, ships_shear_dir, ships_sst, ships_pot_int, ships_t200 …"

@@ -1,0 +1,7 @@
+Ensemble,CRPS (kt),Bias of mean (kt),10–90% coverage,Spread / error
+GEFS: raw members,22.6,-25.5,22%,0.2
+GEFS: GECO,7.6,-1.2,75%,0.87
+GEFS cycles: FNV3 members,8.4,-6.0,62%,0.69
+IFS-ENS: raw members,18.2,-22.5,41%,0.4
+IFS-ENS: IECO,7.7,-1.1,80%,0.95
+IFS-ENS cycles: FNV3 members,8.3,-5.9,62%,0.69

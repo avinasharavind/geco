@@ -1,0 +1,6 @@
+Cases binned by predicted error,Cases,Predicted error (kt),Actual error (kt)
+Calmest fifth,1650,5.0,5.3
+Second,1649,7.9,9.0
+Middle,1649,11.0,13.6
+Fourth,1649,14.6,15.6
+Most volatile fifth,1650,21.0,19.0

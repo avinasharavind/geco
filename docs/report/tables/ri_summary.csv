@@ -1,0 +1,4 @@
+Probability of rapid intensification,Brier score,Skill vs climatology,AUC
+Climatology (2018–24 rate),0.084,0%,–
+RI model (calibrated),0.068,19%,0.87
+FNV3 members (share rising ≥ 30 kt / 24 h),0.065,23%,0.86

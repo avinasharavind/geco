@@ -1,0 +1,392 @@
+{
+ "m1_t5a_max_abs_diff": 0.3524864196777351,
+ "m1_t5a_n_within_0p2": 94,
+ "m1_t5a_n": 96,
+ "m15_cv_overall": {
+  "TCCA": {
+   "mae": 10.2,
+   "mae_lo": 9.51,
+   "mae_hi": 10.94,
+   "bias": 0.49
+  },
+  "TCCB": {
+   "mae": 10.22,
+   "mae_lo": 9.54,
+   "mae_hi": 10.95,
+   "bias": 0.54
+  },
+  "TCRF": {
+   "mae": 11.06,
+   "mae_lo": 10.2,
+   "mae_hi": 11.9,
+   "bias": -2.56
+  },
+  "OFCL": {
+   "mae": 10.03,
+   "mae_lo": 9.34,
+   "mae_hi": 10.65,
+   "bias": 0.07
+  },
+  "IVCN": {
+   "mae": 9.96,
+   "mae_lo": 9.25,
+   "mae_hi": 10.67,
+   "bias": -2.54
+  },
+  "HCCA": {
+   "mae": 9.9,
+   "mae_lo": 9.25,
+   "mae_hi": 10.55,
+   "bias": -0.78
+  }
+ },
+ "m15_cv_storms": 274,
+ "m15_cv_forecasts": 4430,
+ "m15_cv_diff_TCCA_HCCA": [
+  0.3,
+  -0.09,
+  0.71
+ ],
+ "m15_cv_diff_TCCA_IVCN": [
+  0.24,
+  -0.17,
+  0.7
+ ],
+ "m15_cv_diff_TCCB_TCCA": [
+  0.03,
+  -0.12,
+  0.15
+ ],
+ "m15_cv_ri": {
+  "TCCA": {
+   "mae": 19.85,
+   "mae_lo": 17.64,
+   "mae_hi": 22.01,
+   "bias": -17.52
+  },
+  "TCCB": {
+   "mae": 20.09,
+   "mae_lo": 17.75,
+   "mae_hi": 22.39,
+   "bias": -17.97
+  },
+  "TCRF": {
+   "mae": 30.36,
+   "mae_lo": 28.39,
+   "mae_hi": 32.31,
+   "bias": -30.21
+  },
+  "OFCL": {
+   "mae": 21.68,
+   "mae_lo": 19.54,
+   "mae_hi": 23.87,
+   "bias": -20.62
+  },
+  "IVCN": {
+   "mae": 25.71,
+   "mae_lo": 23.58,
+   "mae_hi": 27.85,
+   "bias": -25.24
+  },
+  "HCCA": {
+   "mae": 21.56,
+   "mae_lo": 19.51,
+   "mae_hi": 23.61,
+   "bias": -20.18
+  }
+ },
+ "m15_cv_ri_storms": 86,
+ "m15_cv_ri_diff_TCCA_HCCA": [
+  -1.71,
+  -2.84,
+  -0.63
+ ],
+ "m15_cv_ri_diff_TCCA_OFCL": [
+  -1.83,
+  -3.24,
+  -0.42
+ ],
+ "m15_test_overall": {
+  "TCCA": {
+   "mae": 11.42,
+   "mae_lo": 9.76,
+   "mae_hi": 13.01,
+   "bias": -2.22
+  },
+  "TCCB": {
+   "mae": 11.3,
+   "mae_lo": 9.75,
+   "mae_hi": 12.91,
+   "bias": -2.18
+  },
+  "TCRF": {
+   "mae": 12.68,
+   "mae_lo": 10.71,
+   "mae_hi": 14.62,
+   "bias": -6.04
+  },
+  "OFCL": {
+   "mae": 10.33,
+   "mae_lo": 9.05,
+   "mae_hi": 11.67,
+   "bias": -0.1
+  },
+  "IVCN": {
+   "mae": 11.65,
+   "mae_lo": 9.92,
+   "mae_hi": 13.26,
+   "bias": -6.04
+  },
+  "HCCA": {
+   "mae": 10.3,
+   "mae_lo": 9.14,
+   "mae_hi": 11.49,
+   "bias": -0.87
+  }
+ },
+ "m15_test_storms": 62,
+ "m15_test_forecasts": 1152,
+ "m15_test_diff_TCCA_HCCA": [
+  1.11,
+  -0.03,
+  2.34
+ ],
+ "m15_test_diff_TCCA_IVCN": [
+  -0.23,
+  -1.0,
+  0.53
+ ],
+ "m15_test_diff_TCCB_TCCA": [
+  -0.12,
+  -0.45,
+  0.2
+ ],
+ "m15_test_ri": {
+  "TCCA": {
+   "mae": 19.23,
+   "mae_lo": 15.09,
+   "mae_hi": 23.51,
+   "bias": -16.6
+  },
+  "TCCB": {
+   "mae": 19.55,
+   "mae_lo": 15.64,
+   "mae_hi": 23.5,
+   "bias": -17.03
+  },
+  "TCRF": {
+   "mae": 32.78,
+   "mae_lo": 29.25,
+   "mae_hi": 36.13,
+   "bias": -32.7
+  },
+  "OFCL": {
+   "mae": 19.27,
+   "mae_lo": 15.69,
+   "mae_hi": 23.61,
+   "bias": -18.44
+  },
+  "IVCN": {
+   "mae": 27.91,
+   "mae_lo": 24.53,
+   "mae_hi": 31.37,
+   "bias": -27.77
+  },
+  "HCCA": {
+   "mae": 19.26,
+   "mae_lo": 14.93,
+   "mae_hi": 23.9,
+   "bias": -17.66
+  }
+ },
+ "m15_test_ri_storms": 22,
+ "m15_test_ri_diff_TCCA_HCCA": [
+  -0.03,
+  -2.85,
+  3.06
+ ],
+ "m15_test_ri_diff_TCCA_OFCL": [
+  -0.05,
+  -3.31,
+  2.76
+ ],
+ "m15_test2025_overall": {
+  "TCCA": {
+   "mae": 10.8,
+   "mae_lo": 9.02,
+   "mae_hi": 12.54,
+   "bias": 0.05
+  },
+  "TCCB": {
+   "mae": 10.75,
+   "mae_lo": 9.15,
+   "mae_hi": 12.42,
+   "bias": -0.13
+  },
+  "TCRF": {
+   "mae": 12.9,
+   "mae_lo": 9.68,
+   "mae_hi": 15.23,
+   "bias": -4.78
+  },
+  "OFCL": {
+   "mae": 10.43,
+   "mae_lo": 8.7,
+   "mae_hi": 11.83,
+   "bias": 0.42
+  },
+  "IVCN": {
+   "mae": 11.3,
+   "mae_lo": 8.93,
+   "mae_hi": 13.34,
+   "bias": -4.11
+  },
+  "HCCA": {
+   "mae": 11.03,
+   "mae_lo": 8.97,
+   "mae_hi": 12.67,
+   "bias": -1.65
+  }
+ },
+ "m15_test2025_diff_TCCA_HCCA": [
+  -0.23,
+  -0.96,
+  0.86
+ ],
+ "m15_test2025_diff_TCCA_IVCN": [
+  -0.49,
+  -1.81,
+  0.97
+ ],
+ "m15_test2026_overall": {
+  "TCCA": {
+   "mae": 11.85,
+   "mae_lo": 9.39,
+   "mae_hi": 14.4,
+   "bias": -3.81
+  },
+  "TCCB": {
+   "mae": 11.69,
+   "mae_lo": 9.27,
+   "mae_hi": 14.17,
+   "bias": -3.61
+  },
+  "TCRF": {
+   "mae": 12.53,
+   "mae_lo": 9.78,
+   "mae_hi": 15.2,
+   "bias": -6.93
+  },
+  "OFCL": {
+   "mae": 10.26,
+   "mae_lo": 8.47,
+   "mae_hi": 11.95,
+   "bias": -0.47
+  },
+  "IVCN": {
+   "mae": 11.9,
+   "mae_lo": 9.57,
+   "mae_hi": 14.34,
+   "bias": -7.39
+  },
+  "HCCA": {
+   "mae": 9.8,
+   "mae_lo": 8.46,
+   "mae_hi": 11.13,
+   "bias": -0.32
+  }
+ },
+ "m15_test2026_diff_TCCA_HCCA": [
+  2.05,
+  0.26,
+  3.88
+ ],
+ "m15_test2026_diff_TCCA_IVCN": [
+  -0.05,
+  -0.74,
+  0.74
+ ],
+ "cal_widen_kt": {
+  "12": 1.0,
+  "24": 2.1,
+  "36": 2.9,
+  "48": 3.6,
+  "60": 4.2,
+  "72": 4.8,
+  "84": 5.2,
+  "96": 6.0,
+  "108": 6.0,
+  "120": 7.0,
+  "132": 8.1,
+  "144": 10.2,
+  "156": 10.8,
+  "168": 10.9
+ },
+ "cal_raw_coverage_2025": 0.653,
+ "cal_raw_below_2025": 0.128,
+ "cal_raw_above_2025": 0.22,
+ "cal_raw_width_2025": 24.6,
+ "cal_cal_coverage_2025": 0.777,
+ "cal_cal_below_2025": 0.067,
+ "cal_cal_above_2025": 0.157,
+ "cal_cal_width_2025": 32.1,
+ "cal_raw_coverage_cv": 0.675,
+ "pilot_validation": {
+  "ifs": {
+   "units": 347,
+   "pairs": 246099,
+   "pos_med_km": 15.1,
+   "pos_p90_km": 28.3,
+   "vmax_corr": 0.989,
+   "vmax_bias": -0.84,
+   "pmin_bias": 0.84,
+   "pmin_corr": 0.994
+  },
+  "gefs": {
+   "units": 839,
+   "pairs": 505926,
+   "pos_med_km": 32.8,
+   "pos_p90_km": 129.6,
+   "vmax_corr": 0.983,
+   "vmax_bias": 1.14,
+   "pmin_bias": 6.27,
+   "pmin_corr": 0.911
+  }
+ },
+ "fnv3_overall": {
+  "TCCA": {
+   "mae": 12.73,
+   "mae_lo": 10.81,
+   "mae_hi": 14.52,
+   "bias": -3.93
+  },
+  "TCCB": {
+   "mae": 12.58,
+   "mae_lo": 10.9,
+   "mae_hi": 14.33,
+   "bias": -3.8
+  },
+  "GDMI": {
+   "mae": 11.83,
+   "mae_lo": 10.37,
+   "mae_hi": 13.16,
+   "bias": -6.55
+  },
+  "HCCA": {
+   "mae": 11.74,
+   "mae_lo": 10.13,
+   "mae_hi": 13.27,
+   "bias": -0.82
+  }
+ },
+ "fnv3_storms": 56,
+ "fnv3_diff_TCCA_GDMI": [
+  0.9,
+  -0.71,
+  2.59
+ ],
+ "n_features_A": 56,
+ "n_features_B": 95,
+ "m15_rows_verifiable": 39425,
+ "m15_cycles": 5947
+}

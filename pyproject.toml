@@ -1,0 +1,32 @@
+[project]
+name = "tcic"
+version = "0.1.0"
+description = "Early-cycle tropical cyclone intensity correction for physical-model guidance (NA + EP)"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "xarray",
+    "zarr",
+    "icechunk",
+    "dynamical-catalog",
+    "lightgbm",
+    "scipy",
+    "requests",
+    "matplotlib",
+    "scikit-learn",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

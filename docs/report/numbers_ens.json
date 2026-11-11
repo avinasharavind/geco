@@ -1,0 +1,159 @@
+{
+ "ens_GEFS_vs_fnv3": [
+  -0.78,
+  -1.6,
+  -0.01
+ ],
+ "ens_GEFS_storms": 61,
+ "ens_GEFS_cases": 6405,
+ "ens_GEFS_vs_fnv3_2025": [
+  -0.41,
+  -2.23,
+  1.02
+ ],
+ "ens_GEFS_raw_2025": {
+  "crps": 21.52,
+  "bias": -24.2,
+  "coverage": 0.27
+ },
+ "ens_GEFS_corrected_2025": {
+  "crps": 8.21,
+  "bias": -2.3,
+  "coverage": 0.74
+ },
+ "ens_GEFS_fnv3_2025": {
+  "crps": 8.61,
+  "bias": -5.6,
+  "coverage": 0.61
+ },
+ "ens_GEFS_vs_fnv3_2026": [
+  -1.02,
+  -1.82,
+  -0.14
+ ],
+ "ens_GEFS_raw_2026": {
+  "crps": 23.31,
+  "bias": -26.4,
+  "coverage": 0.18
+ },
+ "ens_GEFS_corrected_2026": {
+  "crps": 7.19,
+  "bias": -0.5,
+  "coverage": 0.76
+ },
+ "ens_GEFS_fnv3_2026": {
+  "crps": 8.21,
+  "bias": -6.2,
+  "coverage": 0.63
+ },
+ "ens_IFS-ENS_vs_fnv3": [
+  -0.65,
+  -1.53,
+  0.2
+ ],
+ "ens_IFS-ENS_storms": 56,
+ "ens_IFS-ENS_cases": 1590,
+ "ens_IFS-ENS_vs_fnv3_2025": [
+  -0.36,
+  -2.08,
+  1.16
+ ],
+ "ens_IFS-ENS_raw_2025": {
+  "crps": 19.8,
+  "bias": -24.0,
+  "coverage": 0.41
+ },
+ "ens_IFS-ENS_corrected_2025": {
+  "crps": 8.53,
+  "bias": -2.4,
+  "coverage": 0.79
+ },
+ "ens_IFS-ENS_fnv3_2025": {
+  "crps": 8.89,
+  "bias": -5.5,
+  "coverage": 0.59
+ },
+ "ens_IFS-ENS_vs_fnv3_2026": [
+  -0.83,
+  -1.71,
+  0.06
+ ],
+ "ens_IFS-ENS_raw_2026": {
+  "crps": 17.22,
+  "bias": -21.5,
+  "coverage": 0.42
+ },
+ "ens_IFS-ENS_corrected_2026": {
+  "crps": 7.08,
+  "bias": -0.3,
+  "coverage": 0.8
+ },
+ "ens_IFS-ENS_fnv3_2026": {
+  "crps": 7.91,
+  "bias": -6.1,
+  "coverage": 0.64
+ },
+ "zigzag_6h": {
+  "Best track": 0.005,
+  "FNV3 members": 0.103
+ },
+ "spread_corr_2025": 0.4,
+ "spread_corr_within_lead_2025": 0.33,
+ "ri_cases": 5342,
+ "ri_events": 490,
+ "ri_obs_rate": 0.092,
+ "ri_clim_rate": 0.06,
+ "ms_all_hccad": [
+  -0.36,
+  -0.41,
+  -0.29
+ ],
+ "ms_all_ccsh": [
+  -0.13,
+  -0.2,
+  -0.08
+ ],
+ "ms_all_ccsr": [
+  -0.34,
+  -0.61,
+  -0.08
+ ],
+ "ms_all_geco_crps": 7.04,
+ "ms_all_cov": 0.76,
+ "ms_1824_hccad": [
+  -0.36,
+  -0.43,
+  -0.29
+ ],
+ "ms_1824_ccsh": [
+  -0.16,
+  -0.23,
+  -0.09
+ ],
+ "ms_1824_ccsr": [
+  -0.23,
+  -0.48,
+  0.01
+ ],
+ "ms_1824_geco_crps": 6.97,
+ "ms_1824_cov": 0.77,
+ "ms_2526_hccad": [
+  -0.32,
+  -0.43,
+  -0.2
+ ],
+ "ms_2526_ccsh": [
+  -0.05,
+  -0.15,
+  0.05
+ ],
+ "ms_2526_ccsr": [
+  -0.71,
+  -1.62,
+  0.1
+ ],
+ "ms_2526_geco_crps": 7.26,
+ "ms_2526_cov": 0.76,
+ "ms_storms": 336,
+ "ms_cases": 27623
+}

@@ -1,0 +1,7 @@
+System,MAE,95% CI,Bias
+"Ours, no SHIPS (TCCA)",19.2,15.1–23.5,-16.6
+"Ours, + SHIPS (TCCB)",19.6,15.6–23.5,-17.0
+HCCA,19.3,14.9–23.9,-17.7
+IVCN,27.9,24.5–31.4,-27.8
+OFCL,19.3,15.7–23.6,-18.4
+Uncorrected aid mean,32.8,29.2–36.1,-32.7
