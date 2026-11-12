@@ -1,26 +1,23 @@
-// Project write-up: early-cycle TC intensity correction and calibrated intensity ensembles for physical-model guidance.
+// Project write-up: GECO and IECO, calibrated intensity ensembles from public real-time physical-model guidance.
 // Build:  .venv/bin/python scripts/report_figures.py && .venv/bin/python scripts/report_figures_ens.py && \
 //         .venv/bin/python scripts/case_plots.py && \
 //         .venv/bin/python -c "import typst; typst.compile('docs/report/report.typ', output='docs/report/report.pdf', font_paths=['/usr/share/fonts'])"
+// (report_figures.py only for the verification-check numbers and figure in Appendix A.)
 
 #let n = json("numbers.json")
 #let e = json("numbers_ens.json")
-#let f1(x) = {
-  let r = str(calc.round(x, digits: 1))
-  let r = if r.contains(".") { r } else { r + ".0" }
-  r.replace("-", "−")
-}
 #let f2(x) = str(calc.round(x, digits: 2)).replace("-", "−")
 #let pct(x) = str(calc.round(100 * x, digits: 0)) + "%"
 #let diff(d) = [#f2(d.at(0)) kt [#f2(d.at(1)), #f2(d.at(2))]]
+#let mag(d) = f2(-d.at(0))
 
 #let ink2 = rgb("#52514e")
 #let rule = rgb("#d6d5d0")
 #let accent = rgb("#2a78d6")
 
-#set document(title: "Early-cycle intensity correction and calibrated intensity ensembles for physical-model TC guidance")
+#set document(title: "GECO and IECO: calibrated intensity ensembles from public real-time physical-model guidance")
 #set page(paper: "us-letter", margin: (x: 1in, y: 0.9in), numbering: "1",
-  header: context { if counter(page).get().first() > 1 [#set text(8pt, fill: ink2); Early-cycle TC intensity correction · project write-up #h(1fr) 29 Oct 2026] })
+  header: context { if counter(page).get().first() > 1 [#set text(8pt, fill: ink2); GECO and IECO · project write-up #h(1fr) 12 Nov 2026] })
 #set text(font: "Libertinus Serif", size: 10.5pt)
 #set par(justify: true, leading: 0.62em, spacing: 0.95em)
 #set heading(numbering: "1.1")
@@ -41,398 +38,220 @@
     columns: if cols == auto { (auto,) + (1fr,) * (ncol - 1) } else { cols },
     align: if aligns != none { aligns } else { (x, y) => if x == 0 { left } else { right } },
     table.header(..rows.at(0).map(h => strong(h))),
-    ..rows.slice(1).flatten().map(c => if c.starts-with("-") { "−" + c.slice(1) } else { c.replace(" -", " −") }),
+    ..rows.slice(1).flatten().map(c => if c.starts-with("-") { "−" + c.slice(1) } else { c.replace(" -", " −").replace("[-", "[−") }),
   )
 }
 #let note(body) = block(fill: rgb("#f3f2ee"), inset: 10pt, radius: 3pt, width: 100%, body)
 
 // ------------------------------------------------------------------ title
 #align(center)[
-  #text(17pt, weight: "bold")[Early-cycle intensity correction and calibrated\ intensity ensembles for physical-model TC guidance]
+  #text(17pt, weight: "bold")[GECO and IECO: calibrated intensity ensembles\ from public real-time physical-model guidance]
   #v(0.3em)
-  #text(10.5pt, fill: ink2)[Project write-up · status as of 29 October 2026 · North Atlantic and East Pacific]
+  #text(10.5pt, fill: ink2)[Project write-up · status as of 12 November 2026 · North Atlantic and East Pacific]
 ]
 #v(0.6em)
 
 #note[
-  *Summary.* This project started from a simple question raised by AIFS-TC (Allen et al. 2026): if a cheap learned correction can lift
-  an AI weather model's tropical-cyclone intensity forecasts to the operational frontier, can the same idea add value on top of the
-  _physical_ models (GFS/GEFS, IFS/ECMWF ensemble, HAFS) that forecasters already use, using only public data and only information that
-  is available in time for the forecast? The work has produced a three-part system. A *consensus correction* learns, with gradient-boosted
-  trees, how far the average of NHC's early guidance typically is from the eventual best track, given the storm's current state and the
-  disagreement between the guidance. An optional *gridded-feature* branch adds information extracted from the GEFS and IFS ensemble
-  fields themselves. Finally, a *calibrated ensemble* layer turns each raw physical ensemble (31 GEFS or 51 ECMWF members), whose
-  intensities are far too weak and far too similar, into a set of smooth, realistic intensity scenarios that are centred on the corrected
-  consensus and spread according to how uncertain such forecasts have historically been.
+  *Summary.* The raw intensity forecasts of the physical ensembles, GEFS and the ECMWF ensemble (IFS-ENS), are far too weak and their
+  members far too similar to be used as probabilistic guidance. GECO and IECO (GEFS / IFS-ENS Ensemble, Consensus-Oriented) are two twin
+  products that turn them into calibrated intensity ensembles, using only data that are public in real time and available within the
+  early-cycle window. Each member is NHC's corrected consensus HCCA plus that member's normalised scenario from the physical ensemble, scaled by
+  a storm-specific predicted error. GECO uses the 30 GEFS member tracks in NHC's public files; IECO uses the 50 IFS-ENS member tracks
+  that ECMWF publishes on its open-data mirror. Both run at every cycle from runs at least 6 h old, and neither needs any gridded data.
 
-  Everything is tested on the combined 2025 and 2026 seasons, held out from training. Testing on 2026, the first season run as it
-  would be in real time, showed that NHC's public real-time files carry no ECMWF aids. The consensus correction is therefore trained
-  without ECMWF inputs, which also made it more accurate in 2025. In 2025 it matches NHC's corrected consensus HCCA, and over 2018–2024 it
-  beats HCCA and the official forecast on rapid intensification. In 2026, however, it falls about 2 kt behind HCCA (which uses ECMWF
-  guidance internally) and is several knots too weak. Gridded fields from our own IFS-ENS extraction, the only real-time route to ECMWF
-  information, now reduce the consensus error by 1–1.5 kt; GEFS fields add nothing, even with five seasons of training data.
-
-  The result is two real-time ensemble products. *GECO* (GEFS Ensemble, Consensus-Oriented) reshapes NHC's public GEFS member tracks
-  around HCCA at every cycle; *IECO* does the same for our IFS-ENS members at 12 UTC. Neither needs any gridded data in its centre or
-  spread. Because GECO needs
-  only NHC's files, it was tested on nine seasons (2018–2026, #e.ms_storms storms): it beats a probabilistic version of HCCA in every
-  season, by #f2(-e.ms_all_hccad.at(0)) kt of CRPS on average, with about three quarters of outcomes inside its 10–90% range. Over
-  2025–26 it beats FNV3's members by #f2(-e.at("ens_GEFS_vs_fnv3").at(0)) kt (significant) and is nearly unbiased. IECO, on the 12 UTC
-  cycles, is #f2(-e.at("ens_IFS-ENS_vs_fnv3").at(0)) kt better than FNV3's members (not significant) and a little behind GECO. As for every system, rapidly intensifying storms remain the main weakness.
+  The fair yardstick is the best guidance already available, made probabilistic: "dressed HCCA". Over nine seasons (2018–2026) GECO beats
+  it in every season, by #mag(e.geco_all_hccad) kt of CRPS on average (#e.geco_storms storms, every season significant); IECO beats it by
+  #mag(e.ieco_all_hccad) kt over 2018–2026 (#e.ieco_storms storms, every season from 2020 significant). On 2025–26, with
+  FNV3 (Google DeepMind) available, both are about 0.8 kt better than FNV3's members at the same early timing, borderline significant over
+  both seasons and significant in 2026, with a mean bias of about −1 kt against FNV3's −6 kt. Their members evolve as smoothly as real storms.
+  Rapid intensification remains the main weakness, as for every guidance system.
 ]
 
 // ------------------------------------------------------------------ 1
 = Motivation and design principles
 
-AIFS-TC corrected the very weak intensities of ECMWF's AIFS-Single AI model with a gradient-boosted tree and a small convolutional
-network trained on nine seasons of hindcasts, cutting the model's error by about a factor of three and bringing it level with FNV3 and the
-NHC official forecast. The physical models used operationally are much less biased than AIFS at the storm scale, but their ensembles,
-which are run at coarse resolution, still produce intensities that are far too weak and members that disagree far too little. The question
-here is therefore not only whether a learned correction helps deterministic intensity forecasts from these models, but also whether it
-can turn their ensembles into usable probabilistic intensity guidance.
+AIFS-TC (Allen et al. 2026) showed that a cheap learned correction can lift an AI weather model's tropical-cyclone intensity forecasts
+to the operational frontier. This project asks whether the physical-model ensembles that forecasters already use can be turned, in the
+same spirit, into usable probabilistic intensity guidance. Their tracks are good, but at their resolution their intensities are 20–25 kt
+too weak on average and their members disagree far too little: in 2025–26 the raw ensembles' 10–90% ranges contain only 20–45% of
+outcomes.
 
-Four principles shaped the design. First, everything is built for the *early cycle*: an input may only be used if it is available within
-about three hours of the synoptic time, exactly as for NHC's own consensus aids and the official forecast. This makes the comparison with
-OFCL fair (the AIFS-TC paper compared a late model) and means the system could run operationally. Second, only *public data* are used:
-NHC's forecast and best-track files, IBTrACS, NCAR's archive of real-time SHIPS output, model archives from dynamical.org, ECMWF open
-data and Google DeepMind's Weather Lab archive. Third, the work is *staged*, starting with the cheapest version that could possibly work
-(track files only) and adding gridded data only to measure what it contributes. Fourth, all comparisons follow NHC's verification
-conventions and use *homogeneous* samples with storm-block bootstrap confidence intervals, so that differences between systems are
-measured on identical cases and judged against the storm-to-storm variability of a single season (details in Appendix A).
+Four principles shaped the design. Everything is built for the *early cycle*: an input may only be used if it is available within about
+three hours of the synoptic time, as for NHC's own consensus aids and the official forecast. Only *public data* are used. The products
+must run in *real time*. And every comparison uses NHC's verification conventions on *homogeneous* samples with storm-block bootstrap
+confidence intervals (Appendix A). FNV3 is a benchmark only and never an input. The target is the best guidance already available, so
+results are judged against HCCA and FNV3; GECO and IECO are two parts of one system, not competitors.
 
 // ------------------------------------------------------------------ 2
-= System architecture
+= System
 
-#figure(image("figures/fig_architecture.svg", width: 100%), caption: [Overview of the system. All inputs are available within three
-hours of the synoptic time $t_0$. The consensus correction (1) produces a corrected mean intensity, a predicted error and a probability
-of rapid intensification; the member deviations (2) carry each physical ensemble's scenario structure; the corrected ensemble (3)
-combines the two.]) <fig-arch>
+#figure(image("figures/fig_architecture.svg", width: 100%), caption: [GECO and IECO. Each member takes its scenario shape from the
+physical ensemble (1), its centre from NHC's corrected consensus HCCA (2) and its spread from a storm-specific spread model (3).]) <fig-arch>
 
-@fig-arch shows how the pieces fit together. At each synoptic time $t_0$ the system gathers what NHC's forecasters would have in hand: the
-operational analysis of the storm (CARQ), the interpolated ("early") versions of the dynamical and statistical-dynamical models that
-NHC publishes in real time, and the member tracks of the GEFS ensemble from the most recent run that is old enough to have arrived.
-ECMWF guidance enters only through our own extraction from ECMWF open data, because NHC's real-time files carry no ECMWF aids. The
-*consensus correction* forms a simple reference forecast, the mean of whichever early aids are available, and uses a gradient-boosted
-tree model to predict how far the best track will be from that reference at each lead time. Its output is a corrected mean intensity,
-plus a 10–90% interval derived from quantile models and widened by conformal calibration so that it holds its nominal coverage.
+@fig-arch shows the construction and @tab-inputs the inputs. All are public in real time.
 
-The *ensemble layer* starts from a raw physical ensemble. Each member's departure from its own ensemble mean is treated as a scenario:
-it is re-anchored so that all members start together at the observed intensity, lightly smoothed in time so that it evolves like a real
-storm, and normalised so that only its shape (which members intensify faster or slower, and when) is kept. The size of the spread comes
-instead from a *spread model*, trained on the consensus correction's past errors, that predicts how wrong this particular forecast is
-likely to be. The *corrected ensemble* is a consensus centre plus the normalised scenarios scaled by that predicted error. For both
-products, GECO (GEFS) and IECO (IFS-ENS), the centre is NHC's corrected consensus HCCA, which is in the public real-time files. A
-companion *RI model* gives a calibrated probability of rapid intensification. A separate *gridded-feature* branch (section 5) can feed
-additional predictors from the ensemble fields into the consensus correction.
+#figure(table(columns: (auto, 1fr), align: left,
+  table.header[*Input*][*Source and use*],
+  [GEFS member tracks (AP01–30)], [NHC's tracker output in its public a-decks (`atcf/aid_public`), every cycle. GECO's shapes.],
+  [IFS-ENS member tracks (50)], [ECMWF's own tracker output, BUFR files on the AWS open-data mirror (`s3://ecmwf-forecasts`), all four runs
+    from January 2023; NHC's archived copies (EE01–50, identical values) before. IECO's shapes.],
+  [HCCA], [NHC's corrected consensus, in the public a-decks at every cycle. The centre. It draws on ECMWF guidance that NHC has
+    internally.],
+  [Storm state (CARQ), early aids], [NHC's analysis at $t_0$ and twelve interpolated aids (GFS, GEFS mean, UKMET, Canadian, Navy, HWRF/HMON/HAFS,
+    COAMPS-TC, DSHP, LGEM). Inputs to the spread model.],
+  [Consensus correction (TCCA)], [Our LightGBM correction of the early-aid mean (no ECMWF, no SHIPS). Its quantile width and predicted
+    24-h change feed the spread model; it fills HCCA's gaps between and beyond its leads, and is GECO's fallback centre when HCCA is missing.],
+), caption: [Inputs. For both ensembles the newest run at least 6 h old is used, with lead times shifted by its age.]) <tab-inputs>
 
-All models are trained season-wise. The consensus correction uses 2018–2024 with leave-one-season-out cross-validation and is tested on
-2025 and 2026 combined (about 60 named storms). The 2025 season is also the test year of the AIFS-TC paper, which makes those results
-directly comparable. The 2026 season, verified against NHC's working best track up to 24 October, is the first season run exactly as
-in real time, from NHC's public real-time files. The gridded models are cross-validated by season over what the archive allows: IFS-ENS
-2024–2026 and GEFS 2020–2026.
+The member runs follow the early-cycle rule: the newest run that is at least 6 h old at the cycle time. NHC's GEFS tracks are in its
+files within that window. ECMWF posts its ensemble tracks 6.5–7.6 h after the start of the 00 and 12 UTC runs in 2025–26 (about 8.7 h in 2024) and
+about 6 h after the 06 and 18 UTC runs (AWS timestamps), so the 6-h-old run is available before every advisory, 9 h after its
+start, though with a thin margin in 2024. NHC's archive holds ECMWF member tracks
+mostly for the 00 and 12 UTC runs, so before 2023 IECO uses a 6-h-old run at half the cycles and a 12- or 18-h-old run at the others;
+from 2023 it is 6 h old at every cycle (#pct(e.ieco_6h_share) of IECO's cases overall).
 
 // ------------------------------------------------------------------ 3
-= Inputs and variables
+= Construction
 
-== Storm state and early guidance
-The storm state comes from NHC's operational analysis (CARQ) at $t_0$: maximum wind and minimum pressure, position, the intensity change
-over the previous 6, 12 and 24 hours, the storm's motion over the previous 12 hours and the distance to land. The guidance consists of the
-interpolated aids listed in @tab-aids. Interpolated aids are the previous cycle's late model runs shifted in time and adjusted to the
-current intensity; following NHC's verification practice, the 6-hour and 12-hour versions of each aid are merged into one. For each aid
-the model sees its intensity at the lead time in question and its change over the preceding 12 hours; missing aids are simply left
-missing. The ECMWF aids are in NHC's archive files but absent from its real-time files during the season, so they are not used. A
-version trained with them was 0.65 kt worse over 2025–26 (significant), because it learned to lean on inputs that are missing in real
-time; even in 2025, when the archive has them, it was 0.4 kt worse (`docs/m15_realtime.md`).
-
-#figure(table(columns: (auto, 1fr, auto), align: left,
-  table.header[*Aid*][*Model*][*Type*],
-  [AVNI, AEMI], [GFS deterministic; GEFS ensemble mean], [global, physical],
-  [EGRI, CMCI, NVGI], [UK Met Office; Canadian; US Navy], [global, physical],
-  [HWFI, HMNI, HFAI, HFBI, CTCI], [HWRF; HMON; HAFS-A; HAFS-B; COAMPS-TC], [regional hurricane models],
-  [DSHP, LGEM], [SHIPS with decay over land; Logistic Growth Equation Model], [statistical-dynamical],
-), caption: [The twelve early (interpolated) aids used by the consensus correction. ECMWF's EMXI and EMNI are not used, because they are
-absent from NHC's real-time files.]) <tab-aids>
-
-== Ensemble members
-The GEFS (30 perturbed members) and ECMWF (50 perturbed members) ensembles enter in two ways. NHC's tracker output for the GEFS members is
-in NHC's real-time files for every cycle; to respect the early-cycle rule we use the newest run that is at least 6 hours old, with lead
-times shifted accordingly. NHC's ECMWF member tracks exist only in the archive, so they are used just for a 2025 comparison of ensembles,
-not as inputs. For the gridded pilot and the
-corrected ensembles we also ran our own tracker on the full ensembles (31 GEFS and 51 IFS-ENS members including the control), so that
-the member intensities, structure and environment are all derived consistently from the model fields. In the consensus correction the
-members are summarised by their mean, spread, 10th and 90th percentiles, the fraction of members that intensify by at least 30 kt in
-24 hours, and their offset from the observed intensity at $t_0$.
-
-== Optional predictors: SHIPS and gridded fields
-The real-time SHIPS output archived by NCAR provides environmental predictors computed along the previous official forecast track: vertical
-wind shear and its direction, sea-surface temperature and the corresponding potential intensity, 200 hPa temperature, mid-level relative
-humidity, 850 hPa vorticity, 200 hPa divergence, ocean heat content, the model vortex strength and satellite infrared predictors. The
-gridded branch reads surface fields for every ensemble member around the storm (sea-level pressure, 10 m wind and gusts, 2 m temperature and
-humidity, low- and mid-level heights and temperatures for IFS-ENS, precipitable water for GEFS) and pressure-level fields from one member
-for the environment (winds at 200, 500 and 850 hPa, temperatures at 200 and 500 hPa, humidity at 500–850 hPa, vorticity, divergence, skin
-temperature and column water). From these we derive, for each member and lead time, the tracked centre, minimum pressure, maximum wind
-and gust, radius of maximum wind, the depth of the pressure minimum and inner-core-minus-surroundings contrasts (warm core, moist core),
-and for the ensemble as a whole SHIPS-style environmental quantities around the ensemble-mean centre (shear, steering flow, humidity,
-vorticity, divergence, SST and an empirical maximum potential intensity). @tab-features summarises the feature groups.
-
-#figure(csvtable("tables/features.csv", cols: (auto, auto, 1fr), aligns: (left, right, left)),
-  caption: [Feature groups of the consensus correction (variant A uses all but SHIPS; variant B adds SHIPS). The gridded branch adds
-  roughly 30–60 further features per model.]) <tab-features>
-
-// ------------------------------------------------------------------ 4
-= Consensus correction
-
-== Formulation
-For each storm, synoptic time $t_0$ and lead time $tau in {12, 24, dots, 168}$ h the model predicts the residual between the best-track
-intensity and the reference consensus,
-$ hat(v)(t_0 + tau) = overline(v)_("ref") (t_0, tau) + f(bold(x)), quad f "trained on" v_("obs") - overline(v)_("ref"), $
-where $overline(v)_("ref")$ is the equal-weight mean of the available early aids and $bold(x)$ collects the features of section 3. A
-single LightGBM model covers all lead times (the lead is a feature), cases of rapid intensification are given twice the weight in
-training, as in AIFS-TC, and the hyperparameters are fixed rather than tuned (600 trees of 15 leaves, learning rate 0.03). Three
-additional quantile models give the 10th, 50th and 90th percentiles. Because tree models fit the training storms' variability too
-closely, their intervals are too narrow on new storms; a conformal adjustment, fitted per lead time on out-of-fold predictions, widens
-them by about 1 kt at 12 h and about 11 kt at 168 h. The same machinery predicts minimum pressure, using as reference the operational
-pressure at $t_0$ plus the GEFS ensemble's predicted pressure change, since the interpolated aids carry no pressure.
-
-== What it achieves
-#figure(image("figures/fig_m15_mae_by_lead.svg", width: 100%), caption: [Maximum-wind error by lead time for the consensus correction
-(TCCA, without SHIPS), NHC's corrected consensus HCCA, the official forecast and the uncorrected aid mean. Left: out-of-fold 2018–2024;
-right: the held-out 2025–26 seasons. Identical cases for all systems.]) <fig-lead>
-
-Over the 2018–2024 cross-validation the corrected consensus is as accurate as NHC's best consensus aids and the official forecast
-(@fig-lead): its average error differs from HCCA's by #diff(n.m15_cv_diff_TCCA_HCCA)\. The two test seasons behave differently. In 2025
-the difference from HCCA is #diff(n.m15_test2025_diff_TCCA_HCCA), with almost no bias, and the correction is several knots better than
-HCCA and OFCL at four to five days. In 2026 it is #diff(n.m15_test2026_diff_TCCA_HCCA) worse than HCCA, significantly, though level with
-the simple consensus IVCN (#diff(n.m15_test2026_diff_TCCA_IVCN)), and it is about #f1(-n.m15_test2026_overall.TCCA.bias) kt too weak. HCCA
-uses ECMWF guidance that NHC has internally but does not publish in real time, and its 2026 errors are unusually low, especially beyond
-two days, so part of the gap is the missing ECMWF information and part is a 2026 season in which the early guidance was weaker than
-usual. Over both seasons together the difference from HCCA is #diff(n.m15_test_diff_TCCA_HCCA)\. In every sample the model removes most
-of the raw consensus's weakness: the uncorrected aid mean is about #f1(-n.m15_test_overall.TCRF.bias) kt too weak over 2025–26. The
-correction is weakest at 12 h, where the official forecast and HCCA benefit from subjective and objective use of the very latest
-observations.
-
-#figure(image("figures/fig_m15_ri.svg", width: 100%), caption: [Error on cases of rapid intensification (an observed increase of at
-least 30 kt in 24 h), with 95% storm-bootstrap intervals.]) <fig-ri>
-
-The clearest gain is on rapid intensification (@fig-ri). Over 2018–2024 the corrected consensus beats HCCA on these cases by
-#diff(n.m15_cv_ri_diff_TCCA_HCCA) and the official forecast by #diff(n.m15_cv_ri_diff_TCCA_OFCL)\. In 2025–26 it is level with both
-(#diff(n.m15_test_ri_diff_TCCA_HCCA) against HCCA). Every system, including ours, remains strongly biased low during rapid
-intensification, which is the main remaining weakness of intensity guidance in general. Adding the operational SHIPS predictors changes
-the error by less than 0.2 kt, which is not surprising because DSHP and LGEM, themselves built on SHIPS, are already inputs. Against the
-early version of FNV3 over 12–168 h the corrected consensus is about 0.9 kt worse on average (not significant) but less biased, and better
-beyond about five days.
-
-#figure(image("figures/fig_calibration.svg", width: 58%), caption: [Share of 2025–26 outcomes inside the 10–90% interval by lead time,
-before and after conformal widening.]) <fig-cal>
-
-// ------------------------------------------------------------------ 5
-= Gridded features from the physical ensembles
-
-The gridded branch asks whether the ensemble fields contain information that the track files do not. We extracted every 00 UTC run of
-IFS-ENS from June 2024 to October 2026 and of GEFS from October 2020 to October 2026 with an active storm in either basin (347 IFS-ENS
-and 839 GEFS runs), tracked every member with a
-simple pressure-minimum tracker that agrees closely with NHC's own tracker (median position differences of
-#f1(n.pilot_validation.ifs.pos_med_km) km for IFS-ENS and #f1(n.pilot_validation.gefs.pos_med_km) km for GEFS, wind correlations of 0.98–0.99),
-and derived the per-member structure and ensemble-environment features described in section 3. Under the early-cycle rule the IFS-ENS
-00 UTC run serves the 12 UTC forecast and the GEFS 00 UTC run the 06 UTC forecast.
-
-#figure(image("figures/fig_melissa.svg", width: 100%), placement: auto, caption: [IFS-ENS run of 26 October 2025 for Hurricane Melissa: our member tracks
-(left) and member intensities (right) against the best track. At 0.25° the ensemble cannot represent the storm's inner core; the
-ensemble-mean intensity stays near 70–75 kt while Melissa reached 165 kt.]) <fig-melissa>
-
-The raw ensembles illustrate the problem the correction has to solve (@fig-melissa): their tracks are good, but their intensities are
-around 23 kt too weak on average and their members far too similar. Three experiments were run on identical cases with leave-one-season-out
-cross-validation: correcting the ensemble's own mean intensity from gridded features alone (as AIFS-TC did for AIFS), the consensus
-correction retrained on the same sample, and the consensus correction with the gridded features added. Gridded features alone are not
-enough: they remove much of the ensemble's bias but remain 2–3 kt behind HCCA. Added to the consensus correction, the IFS-ENS features
-reduce the error by about 1.0 kt over 2024–2026 and by about 1.5 kt over 2025–26, both significant, and by about 2 kt on rapid
-intensification in 2025–26. The gain is larger than in earlier versions because the consensus no longer sees any ECMWF aids, so our
-own IFS-ENS extraction is now its only source of ECMWF information. The GEFS features add nothing (−0.02 kt over 2020–2026, with a
-confidence interval of ±0.2 kt), even after the GEFS archive was extended back to October 2020 to give five seasons of training data
-instead of two. The likely reason is that NHC's tracker output for the GEFS members is already part of the consensus inputs.
-
-// ------------------------------------------------------------------ 6
-= Calibrated intensity ensembles
-
-== Construction
-The raw member intensities are weak and under-dispersive: in 2025–26 their 10–90% ranges contain only about 20–40% of outcomes and their
-spread is a quarter to a third of their actual error. Correcting each member individually with a learned model turned out to collapse the
-ensemble, because the model learns to send every member to nearly the same corrected value. The final construction instead separates
-_where_ the ensemble is centred, _how wide_ it is, and _how its members differ_, and takes each from the source that does it best.
-
-*Shape from the physical ensemble.* For member $i$ at lead $tau$ we form its departure from the ensemble mean, re-anchored so that every
-member starts at zero at $t_0$, and smooth it in time with a Gaussian kernel of 6 h:
+*Shape from the physical ensemble.* For member $i$ at lead $tau$ (every 12 h) the departure from the ensemble mean is re-anchored so that
+every member starts together at $t_0$, and smoothed along lead with a 6-h Gaussian kernel:
 $ d_i (tau) = [v_i (tau) - overline(v)(tau)] - [v_i (0) - overline(v)(0)], quad tilde(d)_i = "smooth"(d_i), quad z_i (tau) = tilde(d)_i (tau) slash "sd"(tau), $
-where $"sd"(tau)$ is the (lead-smoothed) standard deviation of the smoothed departures within that forecast, so that
-$z_i$ carries only the ensemble's scenario structure. The 6-h kernel was chosen because it makes the members' step-to-step behaviour
-match the best track's (section 6.4) while costing nothing in skill; wider kernels made the members unrealistically smooth.
+where $"sd"(tau)$ is the spread of the smoothed departures within that forecast, itself smoothed along lead (18 h). The $z_i$ keep only
+the ensemble's scenario structure: which members intensify faster or slower, and when. The raw intensity level, about 20–25 kt too weak, is
+discarded. The 6-h kernel makes the members' step-to-step behaviour match the best track's (section 4.4) at no cost in skill.
 
-*Size from a spread model.* A separate LightGBM model predicts, for each forecast and lead time, the expected absolute error
-$hat(sigma)$ of the corrected consensus. Its inputs are the consensus-correction features (the disagreement between the early aids, the
-spread of NHC's GEFS member tracks, the storm's intensity, recent trend and position, the lead time) together with the width of
-the consensus correction's own quantile range and its predicted 24-hour intensity change. It is trained on the consensus correction's
-out-of-fold errors from 2018–2024, so it learns from eight seasons of realistic forecast errors rather than from the two seasons of
-gridded ensembles. On 2025–26 its prediction correlates with the actual error at #e.spread_corr_2025 (#e.spread_corr_within_lead_2025 within
-a fixed lead time), and it ranks forecasts well (@tab-spreadbins).
+*Size from a spread model.* A LightGBM regression predicts $hat(sigma)$, the expected absolute error of a consensus forecast for this
+storm, cycle and lead. Its features are the disagreement among the early aids, the spread of NHC's GEFS member tracks, the storm's
+intensity, recent trend, position and distance to land, the lead time, and the consensus correction's quantile width and predicted
+24-h change; all #e.spread_n_features inputs are listed in Appendix B. It is trained on the absolute out-of-fold errors of the consensus
+correction from 2018–2024 (leave-one-season-out), smoothed along lead (18 h) and floored at 2 kt. On
+2025–26 its prediction correlates with the actual error at #e.spread_corr (#e.spread_corr_within_lead within a fixed lead) and ranks forecasts
+well (@tab-spreadbins).
 
 #figure(csvtable("tables/spread_bins.csv", cols: (auto, 1fr, 1fr, 1fr)),
-  caption: [2025–26 forecasts binned by the spread model's predicted error, against the corrected consensus's actual mean absolute error.]) <tab-spreadbins>
+  caption: [2025–26 forecasts binned by predicted error $hat(sigma)$, against the consensus correction's actual mean absolute error.]) <tab-spreadbins>
 
-*Centre from a consensus.* The members are placed around a consensus mean $hat(v)_c$:
-$ "member"_i (tau) = hat(v)_c (tau) + s dot k(tau) dot hat(sigma)(tau) dot z_i (tau), $
-where $hat(sigma)$ is smoothed along lead time and $k(tau)$, a slowly varying factor of about 1.2–1.6 that converts a mean absolute
-error into a member spread, is fitted by minimising the continuous ranked probability score (CRPS) on out-of-fold seasons.
+*Centre.* HCCA as issued at its 12-hourly leads, without smoothing. Between HCCA's leads the HCCA-minus-TCCA offset is interpolated, and
+past its last lead the last offset is carried forward. Forecasts without HCCA (0.3% in 2025–26) fall back to our own consensus for GECO and
+are dropped for IECO.
 
-For the GEFS product, *GECO*, the centre is NHC's corrected consensus HCCA exactly as issued, and $s = 1$ (the CRPS-fitted spread). HCCA
-is in NHC's public real-time files at every cycle (0.3% of 2025–26 forecasts lacked it and fall back to our own consensus), and it draws
-on the ECMWF guidance that NHC has internally but our public-data consensus cannot use. Centring on HCCA rather than on our consensus
-correction improved the CRPS by #diff(e.ms_all_ccsr) over nine seasons and by #diff(e.ms_2526_ccsr) over 2025–26, mostly in 2026. HCCA
-is used as issued; smoothing it along lead time, as our own consensus is, cost #f2(-e.ms_all_ccsh.at(0)) kt. Trimming the spread to 80%
-of the fitted value cost about 0.1 kt and lowered the coverage, so GECO keeps the full spread. The fitted factor is $k = 1.2$ at all leads.
+*Combine.* $ "member"_i (tau) = "HCCA"(tau) + k dot hat(sigma)(tau) dot z_i (tau), $
+clipped to 10–200 kt. Because the $z_i$ have unit spread, the members' standard deviation is $k hat(sigma)$; $k$ converts a predicted
+_mean absolute_ error into a _standard deviation_. For normally distributed errors that factor is $sqrt(pi slash 2) approx 1.25$. $k$ is
+fitted, as $k(tau) = c_0 + c_1 tau slash 100$, by minimising the fair continuous ranked probability score (CRPS) on out-of-fold 2018–2024
+cases. The fit gives $c_1 = 0$ and $k = 1.2$ for both products, close to the normal-theory value, and 1.2–1.3 when refitted without any
+single season. The minimum is shallow: any $k$ from 1.1 to 1.3 is within 0.02 kt of it (Appendix C). Because the $z_i$ average to zero, the ensemble mean is HCCA: the products add a distribution, not a new mean.
 
-The IFS-ENS product, *IECO*, is built in exactly the same way from our 51 IFS-ENS members (00 UTC run, used at 12 UTC), with
-$k = 1.5 - 0.3 tau slash 100$ fitted on 2024, the only out-of-fold IFS-ENS season. An earlier version centred IECO on the consensus
-correction with IFS-ENS gridded features (section 5); on the same 2025–26 cases it was 0.5 kt worse than the HCCA-centred version and
-no better than dressed HCCA (`docs/ensemble_ifs_hcca.md`). On identical 12 UTC cases IECO is 0.1 kt behind GECO (significant), probably
-because its run is 12 h old against 6 h for NHC's GEFS tracks, and pooling the two ensembles around HCCA gained nothing.
+This design separates _where_ the ensemble is centred, _how wide_ it is and _how its members differ_, and takes each from the source that
+does it best. It replaced earlier versions that centred the members on our own consensus correction (with or without gridded IFS-ENS
+features), which were level with dressed HCCA over 2018–2024 but fell behind it in 2026, and an IECO built from our own tracker on the
+gridded IFS-ENS fields, which could use only one run a day. Because the spread comes from the consensus error model and the raw ensembles
+contribute only their shapes, model upgrades that change a raw ensemble's spread (the ECMWF ensemble's roughly doubled between 2024 and
+2025) do not change the products' spread.
 
-Each step fixed a concrete problem seen along the way. Scaling raw member departures independently at every lead time produced traces
-that zig-zagged by tens of knots; anchoring and smoothing removed that. A spread that depended only on lead time was too wide for calm
-storms and too narrow for volatile ones; the spread model fixed that. The ECMWF ensemble's raw spread roughly doubled between 2024 and
-2025, probably because of a model upgrade, which made any scaling learned on earlier seasons far too wide; because the spread now comes
-from the consensus error model and the raw ensemble only contributes its shape, such changes no longer affect the spread. An attempt
-to make the spread asymmetric (wider above the centre than below in rapid-intensification situations) made the ensembles worse and is
-not used.
+// ------------------------------------------------------------------ 4
+= Results
 
-== Nine seasons of GECO
-Because GECO needs only NHC's track files, it can be evaluated on every season since 2018 (#e.ms_storms storms, #e.ms_cases cases,
-all four cycles, leads 12–120 h). For 2018–2024 every fitted ingredient is out of sample for the season being scored: the spread model
-and $k(tau)$ are fitted without that season. The fair yardstick for a probabilistic forecast is a probabilistic version of the
-deterministic consensus: "HCCA dressed" turns HCCA into a normal distribution whose width at each lead is HCCA's root-mean-square error
-in the other seasons. (Scoring HCCA as a single value would flatter any ensemble, whose CRPS is always below its own mean's absolute
-error.) GECO beats dressed HCCA in all nine seasons, each significantly, by #diff(e.ms_all_hccad) overall (@tab-ms). The gain is steady
-across the change from the 20-member GEFS to the 30-member GEFSv12 in September 2020 and the switch from HWRF to HAFS in 2023, and the
-refitted $k(tau)$ stayed at 1.2–1.3. GECO's ensemble mean is HCCA itself, so the gain comes entirely from the GEFS members' scenario shapes
-and the storm-specific spread. Our own consensus as the centre, with the same members and spread, is level with dressed HCCA over
-2018–2024 but falls behind it in 2026.
+== Yardsticks
+Verification uses NHC's best track (2026: the working best track), leads 12–120 h, all four cycles and identical cases for every system in a
+comparison. For 2018–2024 every fitted ingredient is out of sample for the season scored: the consensus correction, the spread model and $k$
+are fitted without that season. 2025–26 use the production models, trained on 2018–2024. The primary yardstick is *dressed HCCA*: HCCA as a
+normal distribution whose width at each lead is HCCA's root-mean-square error in the other 2018–2024 seasons. Scoring HCCA as a single value
+would flatter any ensemble, whose CRPS is always below its own mean's absolute error. The second yardstick is *FNV3*, Google DeepMind's
+50-member ensemble, taken from its newest run at least 6 h old, the same timing rule as ours; it is available for 2025–26.
 
-#figure(csvtable("tables/multiseason.csv", cols: (auto, auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1.6fr, 1fr)),
-  caption: [Fair CRPS (kt) of NHC's GEFS member tracks by season, identical cases. Raw GEFS: members offset to the observed intensity at
-  $t_0$ (as NHC's interpolation does). Consensus centre: the same construction around our own consensus correction. HCCA / OFCL dressed:
-  each as a normal distribution with its out-of-season error by lead. The difference column has 95% storm-bootstrap intervals; coverage is the
-  share of outcomes inside GECO's 10–90% range (ideal 80%).]) <tab-ms>
+== Nine seasons against dressed HCCA
+#figure(csvtable("tables/seasons.csv", cols: (auto, auto, 1fr, 1fr, 1.9fr, auto, 1fr, 1fr, 1.9fr)),
+  caption: [Fair CRPS (kt) by season. Each product is scored on its own sample (GECO: every cycle with NHC's GEFS tracks and HCCA; IECO:
+  every cycle with ECMWF member tracks and HCCA), each against dressed HCCA on the same cases, with 95% storm-bootstrap intervals. NHC's
+  archive has ECMWF member tracks for only one storm in each of 2018 and 2019.]) <tab-seasons>
 
-== Probabilistic skill compared with FNV3
-#figure(csvtable("tables/ensemble_summary.csv", cols: (auto, 1fr, 1fr, 1fr, 1fr)),
-  caption: [2025–26, leads 12–120 h, identical cases within each block (GECO: #e.at("ens_GEFS_storms") storms, all cycles; IECO:
-  #e.at("ens_IFS-ENS_storms") storms, 12 UTC cycles). FNV3 members are taken from the newest run at least 6 h old, the same timing rule as ours.
-  Spread / error is the mean member spread divided by the root-mean-square error of the ensemble mean (1 for a well-dispersed ensemble).]) <tab-ens>
+GECO beats dressed HCCA in all nine seasons, each significantly, by #diff(e.geco_all_hccad) overall (@tab-seasons). The gain is steady across
+the change from the 20-member GEFS to the 30-member GEFSv12 in September 2020 and the switch from HWRF to HAFS in 2023. IECO beats dressed HCCA
+in every season from 2020, each significantly, by #diff(e.ieco_all_hccad) overall, and by the same amount whether its run is 6 h old or
+older. Both are well calibrated: #pct(e.geco_all_cov) (GECO) and #pct(e.ieco_all_cov) (IECO) of outcomes fall inside the 10–90% range, against
+80% for a perfect ensemble, and IECO's spread is #e.ieco_all_spread_err of its error. On identical cases the two are within
+#f2(e.ieco_all_vs_geco.at(0)) kt of each other (#diff(e.ieco_all_vs_geco)). Since both means are HCCA, the gain comes entirely from the
+members' scenario shapes and the storm-specific spread, and the GEFS and IFS-ENS shapes turn out to be about equally informative.
 
-Over 2025–26 GECO beats FNV3's members: its CRPS is lower by #diff(e.at("ens_GEFS_vs_fnv3")), a significant difference, by
-#diff(e.at("ens_GEFS_vs_fnv3_2025")) in 2025 and #diff(e.at("ens_GEFS_vs_fnv3_2026")) in 2026, with a mean bias of about −1 kt against
-FNV3's −6 kt (@tab-ens). It is better than or level with FNV3 at every lead to 120 h, most clearly in the first two days, and is also
-ahead of FNV3's late run, which arrives too late for the forecast cycle (−0.56 kt, not significant). IECO is also ahead of FNV3's members on the
-12 UTC cycles: #diff(e.at("ens_IFS-ENS_vs_fnv3")), in 2025 (#diff(e.at("ens_IFS-ENS_vs_fnv3_2025"))) and in 2026
-(#diff(e.at("ens_IFS-ENS_vs_fnv3_2026"))), though not significantly. The raw ensembles are more than twice as bad. FNV3's members are sharp but over-confident in
-both seasons: their spread is about 60–70% of their error and their mean is 5–6 kt too weak. The spread of both GECO and IECO is close to their
-error (@fig-spread); in both, the spread widens in situations the spread model recognises as volatile.
+#figure(image("figures/fig_crps_by_lead.svg", width: 100%), caption: [Fair CRPS by lead time on identical cases. Left: 2018–2026
+(#e.all_common_cases cases where both products exist). Right: 2025–26 with FNV3 members (#e.fnv3_cases cases).]) <fig-lead>
+
+The gain over dressed HCCA holds at every lead from 12 to 120 h (@fig-lead).
+
+== 2025–26 against FNV3
+#figure(csvtable("tables/ensemble_summary.csv", cols: (1.5fr, auto, auto, auto, auto, 1.6fr, 1.6fr)),
+  caption: [2025–26, all cycles, leads 12–120 h, identical cases for every row (#e.fnv3_storms storms, #e.fnv3_cases cases). Spread / error
+  is the mean member spread divided by the root-mean-square error of the ensemble mean (1 for a well-dispersed ensemble). Differences in
+  CRPS with 95% storm-bootstrap intervals.]) <tab-ens>
+
+On the cases where all systems are available (@tab-ens), the CRPS difference from FNV3 is #diff(e.geco_2526_vs_fnv3) for GECO and
+#diff(e.ieco_2526_vs_fnv3) for IECO: both intervals just reach zero over the two seasons. In 2026 both are significantly better
+(#diff(e.geco_2026_vs_fnv3) and #diff(e.ieco_2026_vs_fnv3)); in 2025 the differences are smaller and uncertain. The interval for GECO
+excludes zero on slightly different samples, for example cycles at which FNV3's late run also exists (`docs/fnv3_compare.md`). Both products
+are better than FNV3 at every lead to 96 h, most clearly in the first two days, and slightly behind it at 108–120 h. FNV3's members are sharp but over-confident:
+their spread is #f2(0.69) of their error, their mean is #str(calc.abs(e.bias_2526_fnv3_early)) kt too weak and only 62% of outcomes fall in
+their 10–90% range. GECO and IECO are nearly unbiased (#e.bias_2526_geco and #e.bias_2526_ieco kt, as HCCA), and their spread follows their error
+at every lead, a little below it (0.87 overall; @fig-spread). Their differences from dressed HCCA on these cases are
+#diff(e.geco_2526_vs_hccad) (GECO) and #diff(e.ieco_2526_vs_hccad) (IECO). The raw ensembles are two to three times worse than either.
 
 #figure(image("figures/fig_spread_vs_error.svg", width: 100%), caption: [Mean member spread (solid) and the error of the ensemble mean
-(dashed) by lead time, 2025–26. A well-calibrated ensemble has the two curves close together. The raw ensembles' errors (25–40 kt) are off the
-scale and only their spread is shown.]) <fig-spread>
-
-== Probability of rapid intensification
-Counting the share of members that intensify by 30 kt in 24 hours is a poor way to estimate the probability of rapid intensification
-from these ensembles, because it depends on exactly how the members are smoothed and scaled. Instead a separate LightGBM classifier,
-trained on 2018–2024 with the same early-cycle features plus the corrected consensus's own predicted 24-hour change, predicts the
-probability that the best track will rise by at least 30 kt in the 24 hours ending at each lead time; an isotonic recalibration fitted on
-out-of-fold predictions keeps its probabilities honest. On 2025–26 it is 19% better than climatology, a little behind FNV3's members
-(23%), and ranks cases as well (@tab-ri). Both systems under-forecast: 2025–26 was rich in rapid intensification (#pct(e.ri_obs_rate) of
-cases against #pct(e.ri_clim_rate) in 2018–2024), and at most probability levels the observed frequency is higher than forecast
-(@tab-rirel). For the standard "next 24 hours" product the model's Brier score is 0.068 against 0.093 for climatology. Work on the RI
-probability is paused, since it is a side product rather than a correction of the physical ensembles.
-
-#figure(csvtable("tables/ri_summary.csv", cols: (auto, 1fr, 1fr, 1fr)),
-  caption: [Probability of a ≥ 30 kt rise in the 24 h ending at $t_0 + tau$, $tau$ = 24–120 h, 2025–26 (#e.ri_cases cases, #e.ri_events with
-  rapid intensification). Skill is the reduction in Brier score relative to climatology; AUC measures ranking only.]) <tab-ri>
-
-#figure(csvtable("tables/ri_reliability.csv", cols: (auto, 1fr, 1fr, 1fr)),
-  caption: [Reliability of the RI model's probabilities on 2025–26: forecasts in each probability band against the observed frequency.]) <tab-rirel>
+(dashed) by lead time, 2025–26, same cases as @tab-ens. A well-calibrated ensemble has the two close together. The raw ensembles' errors
+(20–40 kt) are off the scale and only their spread is shown.]) <fig-spread>
 
 == Physical consistency
 #figure(csvtable("tables/roughness.csv", cols: (auto, 1fr, 1fr, 1fr)),
-  caption: [Step-to-step behaviour of intensity traces, 2025–26. A zig-zag is two consecutive 12-h changes of opposite sign, each at least 10 kt.]) <tab-rough>
+  caption: [Step-to-step behaviour of intensity traces, 2025–26, leads 0–120 h. A zig-zag is two consecutive 12-h changes of opposite sign,
+  each at least 10 kt.]) <tab-rough>
 
-Statistics alone do not show whether individual members look like plausible storms, so we also measured how traces evolve from one
-time step to the next (@tab-rough). The final corrected members change a little less from step to step than the best track does,
-reverse direction less often, and rarely change by more than 30 kt in 12 hours. The first corrected version, by contrast,
-zig-zagged two to three times as often as real storms. FNV3's members have a 12-hour zig-zag rate similar to the best track's, but at
-their native 6-hour spacing they reverse direction about #str(calc.round(e.zigzag_6h.at("FNV3 members") / e.zigzag_6h.at("Best track")))
-times as often as the best track (#e.zigzag_6h.at("FNV3 members") against #e.zigzag_6h.at("Best track")), which is the short-term jitter
-visible in their traces.
+Scores alone do not show whether individual members look like plausible storms, so we also measured how traces evolve from one time step
+to the next (@tab-rough). GECO and IECO members change by about as much per 12 h as the best track, exceed 30 kt in 12 h about as often, and
+reverse direction less often. FNV3's members zig-zag about twice as often as the best track at 12-h spacing, and at their native 6-h spacing
+they reverse direction #str(calc.round(e.zigzag_6h.at("FNV3 members") / e.zigzag_6h.at("Best track"))) times as often, which is the
+short-term jitter visible in their traces.
 
 == Case studies
-#figure(image("figures/fig_case_6.svg", width: 100%), caption: [Hurricane Erin, 15 August 2025, about 18 h before its extreme rapid
-intensification (65 kt to 140 kt by 16 August 18Z): GECO (NHC's 30 GEFS member tracks) for the 06Z cycle (09Z advisory, from the 00Z
-run), IECO (our 51 IFS-ENS members) for the 12Z cycle (15Z advisory, from the 00Z run), FNV3's 00Z members, the best track and the
-official forecast of the 12Z cycle. In grey, the raw members, starting at the models' own intensity.]) <fig-case-erin>
+#figure(image("figures/fig_case_6.svg", width: 100%), caption: [Hurricane Erin, 15 August 2025, 12 UTC cycle, about 18 h before its
+extreme rapid intensification (65 kt to 140 kt by 16 August 18 UTC). GECO (NHC's 30 GEFS member tracks) and IECO (ECMWF's 50 member
+tracks) from the 06 UTC runs, FNV3's 06 UTC members, the best track and the official forecast of the same cycle. In grey, the raw members,
+starting at the models' own intensity.]) <fig-case-erin>
 
-#figure(image("figures/fig_case_2.svg", width: 100%), caption: [Hurricane Melissa, 25 October 2025, at the start of its rapid
+#figure(image("figures/fig_case_2.svg", width: 100%), caption: [Hurricane Melissa, 25 October 2025, 12 UTC cycle, at the start of its rapid
 intensification to 165 kt.]) <fig-case-melissa>
 
-The case studies show what the numbers mean in practice. For Erin on 15 August (@fig-case-erin) the spread model recognises a volatile
-situation: both corrected ensembles fan out widely in the first day, and their upper members reach the 140-kt peak, whereas FNV3's members
-stay mostly below about 125 kt and the official forecast peaks near 120 kt. For Melissa (@fig-case-melissa) the corrected ensembles again rise quickly from the observed
-intensity and fan out; their means peak well below the 165-kt best track, as the consensus does, but the upper members reach 140–160 kt,
-so the extreme outcome lies within the ensemble. FNV3's mean comes closer to the peak and its upper members also reach about 160 kt. Eight
-further cases are in Appendix C, including a steady storm where the spread stays narrow, two forecasts made days before a rapid
-intensification and an East Pacific storm that decays over cooler water. A larger set of 28 cases, with several start times for
-Erin, Gabrielle, Humberto, Melissa and Kiko, is collected in a separate file (`docs/case_plots.pdf`). In these figures each system
-starts at a different time, following the early-cycle rule. A second file (`docs/case_plots_12z.pdf`) shows the same cases with all three
-for the same 12Z cycle (GECO from the 06Z GEFS run, as it would run in real time, IECO from the 00Z IFS-ENS run and FNV3 from its
-06Z run) for a like-for-like visual comparison.
+The cases show what the numbers mean in practice. Every panel is for the same cycle, as the products would run in real time. For Erin
+(@fig-case-erin) the spread model recognises a volatile situation: both ensembles fan out widely in the first day and their upper members
+reach the 140-kt peak, whereas FNV3's members stay mostly below about 125 kt and the official forecast peaks near 120 kt. For Melissa
+(@fig-case-melissa) both ensembles rise quickly from the observed intensity and fan out; their means, which are HCCA, peak well below the
+165-kt best track, but the upper members reach 140–170 kt, so the extreme outcome lies within the ensemble. FNV3's mean comes closer to the
+peak. Eight further cases are in Appendix D. A larger set of 39 cases, including eleven high-profile storms from 2018–2024 (Michael, Florence,
+Dorian, Laura, Iota, Ida, Ian, Lee, Otis, Beryl, Milton) scored out of sample, is in `docs/case_plots.pdf`.
 
-== Remaining limitations
-The ensembles are symmetric around a consensus that, like every guidance system, under-predicts rapid intensification, so in such
-situations the truth still falls above the 90th percentile more often than it should, and some lower members describe weakening that did
-not happen. Making the spread asymmetric did not help, because which borderline situations will intensify rapidly cannot be identified
-well enough in advance. Both products inherit HCCA's errors, which they cannot improve on in the mean. The RI probability is reliable in ranking but too low in
-RI-rich seasons. Three follow-up attempts to fix the RI shortfall,
-documented in `docs/ri_improvements.md` and `docs/ensemble_ritail.md`, had limited success. Adding SHIPS's environmental predictors to the
-RI model did not help. Adapting its base rate to the RI frequency seen earlier in the same season did not help either, because a season's
-early part says little about the rest. Stretching the ensemble's upper half in proportion to the RI probability helped only marginally.
-Feeding NHC's own operational RI guidance (SHIPS-RII, DTOPS and related probabilities, already in the SHIPS files) into the RI model gave
-a small but significant improvement. Because the RI probability is a side product rather than a correction of the physical ensembles,
-further work on it is paused.
+// ------------------------------------------------------------------ 5
+= Real-time operation
 
-// ------------------------------------------------------------------ 7
-= Conclusions and next steps
+At each cycle the products need NHC's public a-decks (CARQ, the early aids, HCCA and the GEFS member tracks) and ECMWF's newest ensemble
+track file at least 6 h old. All are small text or BUFR files of a few MB at most. The computation (shapes, the spread model, combination) takes
+seconds on one core, and no gridded data are read. The inputs are therefore all available in time, but two pieces are not yet in place: the
+arrival times of HCCA and the GEFS member tracks relative to the forecast deadline have not been measured (a poller is ready for the next
+active storm), and the trained models are not yet saved for a stand-alone real-time runner.
 
-For physical-model guidance, a learned early-cycle correction built only from NHC's public real-time files reaches the operational
-frontier over 2018–2025 and improves on it during rapid intensification. The 2026 season, the first run exactly as in real time,
-shows its limit: without the ECMWF guidance that NHC uses internally it falls about 2 kt behind HCCA. The gridded IFS-ENS fields are
-the real-time route to that information, and they now reduce the consensus error by 1–1.5 kt; the GEFS fields add nothing, even with
-five seasons of training data. The calibrated ensemble combines the accuracy of the corrected consensus, a storm-specific estimate of
-its uncertainty and the scenario structure of the physical ensembles. GECO, NHC's GEFS member tracks reshaped around HCCA, beats a
-probabilistic HCCA in each of nine seasons and FNV3's members over 2025–26, at every cycle and from public real-time files only. IECO, the
-same construction for the IFS-ENS, is a little behind GECO but also ahead of FNV3's members. Neither uses gridded data in its centre or
-spread: further gains from the model fields would probably need a convolutional network on the full gridded fields, as in AIFS-TC.
+// ------------------------------------------------------------------ 6
+= Limitations and next steps
 
-A multi-model ensemble that pools the scenario shapes of NHC's GEFS and ECMWF member tracks around the same corrected centre was
-slightly better than either model alone in 2025 (CRPS 7.98 against 7.99–8.06 kt, not significant) and missed the upper tail less often
-in rapid-intensification runs. Doing the same with our own GEFS and IFS-ENS members at a common start time (GEFS used 12 h old) gave
-no measurable gain over 2025–26 (−0.03 kt): once both ensembles share the corrected centre and the predicted spread, their scenario
-shapes are close to interchangeable.
+The products are symmetric around HCCA, which, like every guidance system, under-predicts rapid intensification. In such situations the
+truth still falls above the 90th percentile more often than it should, and some lower members describe weakening that does not happen.
+Making the spread asymmetric did not help, because which borderline situations will intensify rapidly cannot be identified well enough in
+advance. Both products inherit HCCA's errors in the mean. The spread model predicts our consensus correction's errors rather than
+HCCA's, and $k$ absorbs the difference. The test seasons contain about 60 storms, so only large differences are significant, and the
+2026 verification uses NHC's working best tracks. Before 2020, NHC's archive holds ECMWF member tracks for only two storms.
 
-The aim of the project is the best possible correction of the physical ensembles, not the best forecast overall, so FNV3 remains a
-benchmark and is not used as an input. The goal is a real-time system; using an older IFS-ENS run in the early window is acceptable.
-The GEFS archive has been extended back to October 2020 (492 runs), which settled that GEFS fields add nothing, so the GEFSv12
-reforecasts are no longer a priority. The next steps, in order, are:
-- Extend IECO to the 00 UTC cycle from the 12 UTC IFS-ENS run.
-- A convolutional network on multi-level gridded fields, combined with the consensus correction, when compute allows.
-- Re-examine the 2026 shortfall once NHC finalises the 2026 best tracks, and look at which storms and lead times drive it.
-- A real-time prototype triggered by NHC's public guidance files, after checking when each data source becomes available relative to the
-  early-cycle deadline.
+The next steps, in order:
+- A real-time runner: persist the trained models, poll NHC's public files and ECMWF's track files, and write ATCF-format members.
+- Measure the arrival times of HCCA, the GEFS member tracks and ECMWF's track files during the next active storms.
+- Re-score 2026 once NHC finalises its best tracks.
+- A convolutional network on multi-level gridded fields, combined with this construction, when compute allows; the present products use no
+  gridded data at all.
 
 // ------------------------------------------------------------------ appendices
 #pagebreak()
@@ -441,13 +260,11 @@ reforecasts are no longer a priority. The next steps, in order, are:
 #show heading.where(level: 1): it => { set text(13pt); [Appendix #counter(heading).display("A") · #it.body]; v(0.2em) }
 
 = Verification framework
-All verification follows NHC's conventions. Truth is the final best track (b-deck); a case counts only if the system is a tropical or
-subtropical cyclone at both the initial and the valid time; and every comparison is homogeneous, i.e. all systems are scored on exactly
-the same cases. Deterministic forecasts are scored by the mean absolute error and bias of maximum wind; ensembles by the fair continuous
-ranked probability score (CRPS), a quantile score at the 10th, 50th and 90th percentiles, the coverage of the 10–90% range and the ratio
-of spread to the error of the mean. Confidence intervals resample whole storms (block bootstrap), as in the AIFS-TC paper, because cases
-from the same storm are strongly correlated. Rapid intensification is an observed increase of at least 30 kt over the 24 hours ending at
-the valid time.
+All verification follows NHC's conventions. Truth is the final best track (b-deck; 2026: the working best track); a case counts only if
+the system is a tropical or subtropical cyclone at both the initial and the valid time; and every comparison is homogeneous. Ensembles are
+scored by the fair continuous ranked probability score (CRPS), the coverage of the 10–90% range and the ratio of spread to the error of
+the mean. Confidence intervals resample whole storms (block bootstrap), as in the AIFS-TC paper, because cases from the same storm are
+strongly correlated.
 
 As a check, the harness recomputes NHC's published 2024 Atlantic verification. The official-forecast table is reproduced with identical
 case counts and errors within 0.1 kt, and the homogeneous early-model table with identical case counts and #n.m1_t5a_n_within_0p2 of
@@ -456,94 +273,67 @@ case counts and errors within 0.1 kt, and the homogeneous early-model table with
 #figure(image("figures/fig_m1_reproduction.svg", width: 40%), caption: [Recomputed versus published errors for NHC's 2024 homogeneous
 early-aid verification; each point is one aid at one lead time.]) <fig-m1>
 
-= Detailed results
-All values in kt; identical cases across the systems in each table; 95% storm-bootstrap intervals.
+= Spread-model inputs
+The spread model is a LightGBM regression (500 trees of 15 leaves, learning rate 0.03, at least 200 cases per leaf, 70% of features and
+80% of cases per tree, L2 penalty 1) whose target is the absolute error of the consensus correction, $|v_("obs") - "TCCA"|$, at each storm,
+cycle and lead (12–168 h). @tab-feat lists every input. All are available by $t_0$ + 3 h; missing values (an aid not run, a lead beyond
+an aid's range) are left missing and handled by the trees. Early aids are NHC's interpolated versions, with the 6-h and 12-h versions
+merged. There are no ECMWF, SHIPS or gridded inputs. The spread model never sees the IFS-ENS members: IECO uses the same $hat(sigma)$ as GECO.
 
-#grid(columns: (1fr, 1fr), gutter: 12pt,
-  [*Consensus correction, cross-validation 2018–24* #csvtable("tables/overall_cv.csv")],
-  [*Consensus correction, held-out 2025–26* #csvtable("tables/overall_test.csv")],
-  [*Rapid intensification, 2018–24* (#n.m15_cv_ri_storms storms) #csvtable("tables/ri_cv.csv")],
-  [*Rapid intensification, 2025–26* (#n.m15_test_ri_storms storms) #csvtable("tables/ri_test.csv")],
-)
-*Error by lead, held-out 2025–26* #csvtable("tables/bylead_test.csv")
-*Error by lead against FNV3 early, 2025–26, 12–168 h* (#n.fnv3_storms storms) #csvtable("tables/bylead_fnv3.csv")
+#[#show figure: set block(breakable: true)
+#figure(csvtable("tables/spread_features.csv", cols: (auto, auto, 1fr), aligns: (left, left, left)),
+  caption: [Every input of the spread model (#e.spread_n_features variables; each early aid contributes two), one row per storm, cycle $t_0$
+  and lead time.]) <tab-feat>]
 
-*Gridded features (leave-one-season-out, leads 12–120 h; from `docs/m2_results.md`).* On IFS-ENS cycles (2024–2026): consensus
-correction retrained on the same rows 12.0 kt, with IFS-ENS gridded features 10.9 kt (difference −1.04 kt [−1.72, −0.40]), gridded
-features alone 13.4 kt, HCCA 10.4 kt, OFCL 10.4 kt. On GEFS cycles (2020–2026): 10.41 kt without and 10.39 kt with GEFS gridded features
-(−0.02 kt [−0.22, +0.18]), HCCA 9.6 kt.
-*Pressure (2025–26, 12–120 h):* corrected 8.8 mb against 12.3 mb for the reference and 17.1 mb for persistence.
+= Choice of the spread factor $k$
+$k$ is chosen by minimising the out-of-fold CRPS. @tab-k shows the CRPS, the coverage of the 10–90% range and the spread / error ratio
+of both products over 2018–2024 for constant $k$ (leads 12–120 h; #e.k_cases.GECO GECO and #e.k_cases.IECO IECO cases). Three points
+explain the choice of 1.2:
+- *It is the CRPS minimum*, for both products. A narrower ensemble (smaller $k$) misses too many outcomes; a wider one is penalised for
+  spreading probability where outcomes rarely fall. The minimum is shallow between 1.1 and 1.3 (within 0.02 kt).
+- *It matches normal theory.* The members' standard deviation is $k hat(sigma)$ and $hat(sigma)$ predicts a mean absolute error, so for
+  normally distributed errors the calibrated factor would be $sqrt(pi slash 2) approx 1.25$.
+- *It is slightly sharper than a spread that matches the error.* The errors are heavier-tailed than normal (their root-mean-square is
+  #e.rms_over_mae times their mean absolute value, against 1.25 for a normal distribution), so spread / error = 1 needs $k approx 1.3$–1.4.
+  The CRPS prefers a slightly narrower ensemble, because $hat(sigma)$ ranks forecasts only imperfectly: the extra width would be spent
+  mostly on cases that do not need it. The cost is coverage a little below 80% (76–78% at $k = 1.2$).
+The fit allowed $k$ to vary linearly with lead time ($c_1$ from −0.4 to +0.4 in steps of 0.1; $c_0$ from 0.6 to 2.0 in steps of 0.1);
+the best slope was zero, so $k$ is constant. Refitting without each 2018–2024 season in turn gave 1.2 or 1.3 with slopes of 0 to −0.1.
+
+#figure(csvtable("tables/k_curve.csv", cols: (auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr)),
+  caption: [Out-of-fold 2018–2024 fair CRPS (kt), 10–90% coverage (ideal 80%) and spread / error (1 for a well-dispersed ensemble) for
+  constant $k$. GECO and IECO are on their own cases, so their CRPS values are not directly comparable.]) <tab-k>
 
 = Additional case studies
+All panels are for the 12 UTC cycle: GECO and IECO from the 06 UTC runs, FNV3 from its 06 UTC run.
 #figure(image("figures/fig_case_1.svg", width: 100%), caption: [Hurricane Erin, 14 August 2025, two days before its rapid intensification.])
-#figure(image("figures/fig_case_3.svg", width: 100%), caption: [Hurricane Kiko, 1 September 2025, East Pacific: our ensembles bracket the
-best track while FNV3's remain far too weak after the second day.])
+#figure(image("figures/fig_case_3.svg", width: 100%), caption: [Hurricane Kiko, 1 September 2025, East Pacific: steady intensification to a
+category 4 hurricane.])
 #figure(image("figures/fig_case_4.svg", width: 100%), caption: [Hurricane Erin, 19 August 2025: recurvature and extratropical transition.])
 #figure(image("figures/fig_case_5.svg", width: 100%), caption: [Tropical Storm Henriette, 6 August 2025: a weak, long-lived storm.])
 #figure(image("figures/fig_case_7.svg", width: 100%), caption: [Hurricane Humberto, 25 September 2025: rapid intensification to 140 kt
-within three days. All three ensembles are too slow; only our upper members reach the peak, a day late.])
+within three days, then rapid weakening.])
 #figure(image("figures/fig_case_8.svg", width: 100%), caption: [Hurricane Gabrielle, 18 September 2025: weak for four days, then rapid
-intensification to 120 kt. Every system misses the timing and size of the burst; FNV3's mean comes closest at the peak.])
+intensification to 120 kt.])
 #figure(image("figures/fig_case_9.svg", width: 100%), caption: [Hurricane Melissa, 22 October 2025, three to four days before its rapid
-intensification. Our ensembles already lean toward a strong hurricane and keep the best track inside their range; FNV3 stays weak until day four.])
+intensification.])
 #figure(image("figures/fig_case_10.svg", width: 100%), caption: [Hurricane Priscilla, 5 October 2025, East Pacific: rise to 100 kt and decay
-over cooler water. All systems capture the shape; ours peak lower and decay later than the best track.])
-
-#pagebreak(weak: true)
-= Data coverage
-#figure(image("figures/fig_aid_coverage.svg", width: 66%), caption: [Share of NHC forecast cycles with each early aid, after merging the 6-h and
-12-h interpolated versions. HAFS (HFAI/HFBI) became operational in 2023; ECMWF aids appear in the public archive from 2020 but never in
-the real-time files; FNV3 (GDMI) only from 2025.])
-
-The operational SHIPS archive covers 70–96% of cases per season (lowest in 2020–21) and reaches 168 h only from 2020. GEFS members are
-available for nearly all cases; ECMWF members for about three quarters of archive cases from 2020 and very few before, and none in
-real time. Our own extraction covers every 00 UTC run with an active storm: IFS-ENS from June 2024 and GEFS from October 2020, both to
-October 2026 (1,186 runs). FNV3 members for 2025–26 come from Google
-DeepMind's Weather Lab archive (50 members, CC BY 4.0 for historical data); their ensemble mean matches the GDMN aid in NHC's files.
-
-= Technical notes and limitations
-
-*Data access.* Subsetting a cloud dataset does not always reduce what is downloaded: on dynamical.org's "virtual" stores each stored
-chunk is a whole global field, so a storm-centred patch costs as much as the globe, whereas the "native" stores are tiled and make patches
-cheap but hold only surface variables. The gridded extraction therefore reads per-member surface fields from the native stores and
-pressure-level environment fields from one member only (the GEFS virtual store and ECMWF open data). Reading the zarr arrays directly,
-rather than through xarray's lazy indexing, cut memory use by a factor of about four.
-
-*Running on a shared machine.* The extraction ran on a shared DGX Spark, capped at four cores and 16 GB, at the lowest CPU and I/O
-priority, with downloads limited to 85% of the network link minus other users' traffic and automatic pauses when the machine was busy.
-Work was split into one unit per model run, written atomically, with a lock-file heartbeat so that a crash or reboot loses at most one unit
-and the next start resumes; failed units are retried. The original pilot (about 0.75 TB downloaded, 6 GB stored) took about 20 hours
-of network-bound work; the GEFS extension back to October 2020 (492 runs, about 210 GB) took 7.5 hours overnight. Our tracker's agreement with NHC's tracker over all units is shown in @fig-trackval.
-
-#figure(image("figures/fig_tracker_validation.svg", width: 92%), caption: [Our tracker's maximum wind against NHC's tracker on the same
-members and runs.]) <fig-trackval>
-
-*Real-time availability.* ECMWF's track aids (EMX, EEMN and the members) are absent from NHC's public real-time files during the season
-and appear in the archive only afterwards, so the consensus correction is trained without them; our own extraction from ECMWF open data
-is the legitimate real-time route. From mid-May 2026 ECMWF's open data no longer include the control member, so 2026 environment fields come
-from member 1.
-
-*Model changes.* The ECMWF ensemble's raw intensity spread roughly doubled between 2024 and 2025, and HAFS replaced HWRF in 2023. The
-ensemble spread is set by the consensus error model rather than by the raw ensemble, so the first no longer affects it; aid
-availability changes are handled by leaving missing aids missing.
-
-*Statistical caveats.* The two test seasons together contain about 60 storms, so confidence intervals are wide and only large
-differences are significant. The 2026 best tracks are NHC's working best tracks; post-season analysis often revises peak intensities.
-Hyperparameters were not tuned. The IFS-ENS gridded models have only three seasons of data. The
-day of the year is among the most important features in some models, which may partly reflect differences between seasons rather than
-physics.
+over cooler water.])
 
 = Glossary and reproduction
 / CARQ: NHC's operational analysis of position and intensity at $t_0$, with the preceding 24 h.
-/ OFCL: the official NHC forecast. HCCA: NHC's corrected consensus. IVCN: NHC's simple intensity consensus.
+/ OFCL: the official NHC forecast. HCCA: NHC's corrected consensus.
 / Early / late: available / not available in time for the forecast cycle that starts at the synoptic time.
-/ FNV3 (GDMN, GDMI): Google DeepMind's cyclone model; NHC files carry its ensemble mean (late) and an interpolated version (early).
+/ FNV3: Google DeepMind's cyclone model (Weather Lab archive, 50 members).
 / CRPS: continuous ranked probability score, the probabilistic analogue of the mean absolute error (lower is better).
-/ TCCA, TCCB: our consensus correction without and with SHIPS.
-/ GECO: GEFS Ensemble, Consensus-Oriented: NHC's GEFS member tracks around HCCA, full spread, every cycle.
-/ IECO: IFS-ENS Ensemble, Consensus-Oriented: our IFS-ENS members around HCCA, full spread, 12 UTC.
+/ Dressed HCCA: HCCA as a normal distribution with its out-of-season error by lead.
+/ TCCA: our consensus correction of the early-aid mean (no ECMWF, no SHIPS).
+/ GECO: GEFS Ensemble, Consensus-Oriented: NHC's 30 GEFS member tracks around HCCA, every cycle.
+/ IECO: IFS-ENS Ensemble, Consensus-Oriented: ECMWF's 50 ensemble member tracks around HCCA, every cycle.
 
-*Reproduce.* M1 checks: `scripts/m1_check.py`; consensus correction: `python -m tcic.consensus.features` and `scripts/m15_run.py`;
-gridded extraction: `scripts/pilot.sh`; gridded models: `python -m tcic.gridded.features` and `scripts/m2_run.py`; ensembles:
-`python -m tcic.ensemble.members`, `scripts/ens_run.py`, `scripts/ens_calib.py` (spread and RI models), `scripts/ens_smoothspread.py`, `scripts/ens_gridcentre.py` (gridded-centre variant), `scripts/ens_geco.py` (GECO and IECO), `scripts/ens_ifs_hcca.py`, `scripts/ens_multiseason.py` (nine seasons), `scripts/fnv3_compare.py`; the whole chain: `scripts/rerun_chain.sh`;
-figures: `scripts/report_figures.py`, `scripts/report_figures_ens.py`, `scripts/case_plots.py`. Detailed notes are in `plan.md` and `docs/`.
+*Reproduce.* The whole chain, resumable: `scripts/rerun_chain.sh start`. Inputs: `python -m tcic.data.atcf` (NHC decks),
+`scripts/fetch_ecmwf_tracks.py` and `python -m tcic.data.ecmwf_tf` (ECMWF tracks). Consensus correction and spread model:
+`python -m tcic.consensus.features`, `scripts/m15_run.py`, `python -m tcic.ensemble.members`, `scripts/ens_run.py`, `scripts/ens_calib.py`.
+Products: `src/tcic/ensemble/geco.py`; GECO `scripts/ens_geco.py` and `scripts/ens_multiseason.py`; IECO `scripts/ens_ieco.py`. Comparisons
+and figures: `scripts/fnv3_compare.py`, `scripts/report_figures_ens.py`, `scripts/case_plots.py`. Detailed results: `docs/ensemble_multiseason.md`,
+`docs/ensemble_ieco.md`, `docs/fnv3_compare.md`; history in `plan.md`.

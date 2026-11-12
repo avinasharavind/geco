@@ -25,10 +25,13 @@ STEPS=(
   "gridcentre .venv/bin/python scripts/ens_gridcentre.py"
   "geco       .venv/bin/python scripts/ens_geco.py"
   "multiseason .venv/bin/python scripts/ens_multiseason.py"
+  "ecmwf_tf   .venv/bin/python -m tcic.data.ecmwf_tf"
+  "ieco       .venv/bin/python scripts/ens_ieco.py"
+  "k_curve    .venv/bin/python scripts/k_curve.py"
   "fnv3       .venv/bin/python scripts/fnv3_compare.py"
   "fig_m15    .venv/bin/python scripts/report_figures.py"
   "fig_ens    .venv/bin/python scripts/report_figures_ens.py"
-  "cases      .venv/bin/python scripts/case_plots.py && .venv/bin/python scripts/case_plots.py --12z"
+  "cases      .venv/bin/python scripts/case_plots.py"
 )
 case "${1:-status}" in
   start)

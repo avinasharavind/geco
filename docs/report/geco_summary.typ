@@ -15,7 +15,7 @@
 #align(center)[
   #text(15pt, weight: "bold")[GECO: a calibrated GEFS intensity ensemble from public real-time data]
   #v(0.15em)
-  #text(9.5pt, fill: ink2)[GEFS Ensemble, Consensus-Oriented · architecture summary · 29 October 2026 · North Atlantic and East Pacific]
+  #text(9.5pt, fill: ink2)[GEFS Ensemble, Consensus-Oriented · architecture summary · 12 November 2026 · North Atlantic and East Pacific]
 ]
 
 = What it is
@@ -26,6 +26,8 @@ own consensus aids. Each output member is
 $ "member"_i (tau) = "HCCA"(tau) + k dot hat(sigma)(tau) dot z_i (tau), $
 where HCCA is NHC's corrected consensus forecast (the _centre_), $hat(sigma)$ is a predicted forecast error (the _size_ of the spread)
 and $z_i$ is the member's normalised scenario from the GEFS (the _shape_). Each of the three comes from the source that does it best.
+Its twin, IECO, is the same construction on the 50 member tracks that ECMWF publishes for its ensemble (IFS-ENS) on its open-data
+mirror; over 2018–26 it scores within 0.04 kt of GECO.
 
 = Inputs (all available by about $t_0$ + 3 h)
 #table(columns: (auto, 1fr), align: left,
@@ -86,8 +88,9 @@ yardstick is "dressed HCCA": HCCA as a normal distribution whose width at each l
 #text(8.5pt)[336 storms, 27,623 cases. GECO beats dressed HCCA in each of the nine seasons separately, each significantly, across the
 GEFS upgrade from 20 to 30 members (2020) and the HWRF-to-HAFS switch (2023).]
 
-*Against FNV3 (Google DeepMind), 2025–26.* On 6,405 identical cases (61 storms), GECO's CRPS is 7.6 kt against 8.4 kt for FNV3's 50 members
-taken at the same early timing: −0.78 kt [−1.60, −0.01], significant. GECO is better or level at every lead to 120 h; its mean bias is
+*Against FNV3 (Google DeepMind), 2025–26.* GECO's CRPS is about 0.8 kt lower than that of FNV3's 50 members taken at the same early
+timing (7.6 against 8.4 kt): −0.86 kt [−1.69, −0.04] on GECO's own cases, −0.80 kt [−1.65, +0.02] on the 6,345 cases where IECO also exists;
+significant in 2026 on its own. GECO is better or level at every lead to 120 h; its mean bias is
 −1.2 kt against FNV3's −6.0 kt; its spread is 0.87 of its error against 0.69 for FNV3, which is over-confident.
 
 *Physical consistency.* GECO members change by 9.0 kt per 12 h on average (best track 8.6 kt), zig-zag less often than the best track
@@ -103,4 +106,4 @@ is symmetric about the centre, so rapid intensification still falls above the 90
 model has not been retrained on HCCA's errors (it predicts our consensus correction's errors, and $k$ absorbs the difference).
 
 #text(8.5pt, fill: ink2)[Code: `src/tcic/ensemble/geco.py`, `scripts/ens_geco.py`; nine-season evaluation `scripts/ens_multiseason.py`,
-`docs/ensemble_multiseason.md`; FNV3 comparison `scripts/fnv3_compare.py`.]
+`docs/ensemble_multiseason.md`; IECO `scripts/ens_ieco.py`; FNV3 comparison `scripts/fnv3_compare.py`; full write-up `docs/report/report.pdf`.]

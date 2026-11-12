@@ -16,6 +16,7 @@ dependencies = [
     "requests",
     "matplotlib",
     "scikit-learn",
+    "eccodes",
 ]
 
 [project.optional-dependencies]

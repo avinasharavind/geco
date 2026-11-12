@@ -1,7 +1,7 @@
-Ensemble,CRPS (kt),Bias of mean (kt),10–90% coverage,Spread / error
-GEFS: raw members,22.6,-25.5,22%,0.2
-GEFS: GECO,7.6,-1.2,75%,0.87
-GEFS cycles: FNV3 members,8.4,-6.0,62%,0.69
-IFS-ENS: raw members,18.2,-22.5,41%,0.4
-IFS-ENS: IECO,7.7,-1.1,80%,0.95
-IFS-ENS cycles: FNV3 members,8.3,-5.9,62%,0.69
+System,CRPS (kt),Bias of mean (kt),10–90% coverage,Spread / error,− HCCA dressed,− FNV3
+GECO (GEFS),7.59,-1.2,75%,0.87,"-0.34 [-0.50, -0.21]","-0.80 [-1.65, +0.02]"
+IECO (IFS-ENS),7.64,-1.3,75%,0.87,"-0.29 [-0.42, -0.15]","-0.74 [-1.59, +0.07]"
+HCCA dressed,7.93,-1.2,83%,0.96,,
+FNV3 members (early),8.39,-6.0,62%,0.69,,
+Raw GEFS members,22.64,-25.5,22%,0.20,,
+Raw IFS-ENS members,16.94,-20.7,45%,0.43,,

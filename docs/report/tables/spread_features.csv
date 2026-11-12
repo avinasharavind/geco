@@ -1,0 +1,49 @@
+Group,Variable,Description
+"Storm state (CARQ, t0)",vmax0,maximum wind at t0 (kt)
+"Storm state (CARQ, t0)",pmin0,minimum pressure at t0 (hPa)
+"Storm state (CARQ, t0)",lat0,latitude at t0
+"Storm state (CARQ, t0)",lon0,longitude at t0
+"Storm state (CARQ, t0)",dv6,intensity change over the previous 6 h
+"Storm state (CARQ, t0)",dv12,intensity change over the previous 12 h
+"Storm state (CARQ, t0)",dv24,intensity change over the previous 24 h
+"Storm state (CARQ, t0)",u_motion,eastward motion over the previous 12 h (km/h)
+"Storm state (CARQ, t0)",v_motion,northward motion over the previous 12 h (km/h)
+"Storm state (CARQ, t0)",dist2land0,distance to land at t0 (km)
+"Storm state (CARQ, t0)",basin_ep,East Pacific (1) or Atlantic (0)
+"Storm state (CARQ, t0)",doy,day of the year of t0
+Lead time,lead,lead time τ (h)
+Early-aid consensus,n_aids,number of early aids available at this lead
+Early-aid consensus,ref_vmax,equal-weight mean intensity of the available early aids (the reference)
+Early-aid consensus,ref_pmin,reference pressure: CARQ pressure plus the GEFS members' mean pressure change
+Early-aid consensus,aid_vmax_std,standard deviation of the early aids' intensities
+Early-aid consensus,aid_vmax_range,range (max − min) of the early aids' intensities
+Early-aid consensus,lat_c,mean forecast latitude of the early aids
+Early-aid consensus,lon_c,mean forecast longitude of the early aids
+Early-aid consensus,dist2land_c,distance to land at the mean forecast position (km)
+GEFS members (NHC tracks),gefs_vmax_mean,mean member intensity at this lead
+GEFS members (NHC tracks),gefs_vmax_std,standard deviation of member intensities
+GEFS members (NHC tracks),gefs_vmax_p10,10th percentile of member intensities
+GEFS members (NHC tracks),gefs_vmax_p90,90th percentile of member intensities
+GEFS members (NHC tracks),gefs_n,number of members tracked at this lead
+GEFS members (NHC tracks),gefs_mslp_mean,mean member minimum pressure at this lead
+GEFS members (NHC tracks),gefs_vmax0_mean,mean member intensity valid at t0
+GEFS members (NHC tracks),gefs_mslp0_mean,mean member pressure valid at t0
+GEFS members (NHC tracks),gefs_ri_frac,share of members rising ≥ 30 kt in the 24 h ending at this lead
+GEFS members (NHC tracks),gefs_age,age of the GEFS run at t0 (6 or 12 h)
+GEFS members (NHC tracks),gefs_offset0,mean member intensity at t0 minus CARQ intensity
+Consensus correction (TCCA),tcca_mean,corrected mean intensity at this lead (out of fold)
+Consensus correction (TCCA),tcca_qwidth,width of its 10–90% quantile range
+Consensus correction (TCCA),tcca_dv24,its predicted intensity change over the 24 h ending at this lead
+Consensus correction (TCCA),tcca_minus_v0,its predicted intensity minus the CARQ intensity at t0
+Early aids (interpolated),"AVNI_vmax, AVNI_dv12",GFS: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"AEMI_vmax, AEMI_dv12",GEFS mean: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"EGRI_vmax, EGRI_dv12",UKMET: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"CMCI_vmax, CMCI_dv12",Canadian (CMC): intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"NVGI_vmax, NVGI_dv12",Navy (NAVGEM): intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"HWFI_vmax, HWFI_dv12",HWRF: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"HMNI_vmax, HMNI_dv12",HMON: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"HFAI_vmax, HFAI_dv12",HAFS-A: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"HFBI_vmax, HFBI_dv12",HAFS-B: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"CTCI_vmax, CTCI_dv12",COAMPS-TC: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"DSHP_vmax, DSHP_dv12",SHIPS with decay over land: intensity at this lead; its change over the preceding 12 h
+Early aids (interpolated),"LGEM_vmax, LGEM_dv12",LGEM: intensity at this lead; its change over the preceding 12 h

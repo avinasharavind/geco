@@ -313,3 +313,18 @@ thin (~500 storm-runs), so treat this pilot as directional.
 - 2026-11-03: IECO redefined (user) as the HCCA-centred IFS-ENS ensemble, built like GECO (`scripts/ens_geco.py`; k = 1.50 − 0.30 τ/100
   fit on 2024). 2025–26 12Z: CRPS 7.7, −0.65 kt [−1.53, +0.20] vs FNV3 early, +0.1 vs GECO. Old gridded-centre version kept as column
   CCSG (`scripts/ens_gridcentre.py`). Report, tables, figures and case plots regenerated.
+
+## 2026-11-11/12: IECO from ECMWF's own tracks (official); report trimmed to GECO / IECO
+- ECMWF ENS per-member TC tracks (BUFR "tf" files) downloaded from the AWS open-data mirror, 2023-01-18 → 2026-11-10, all four runs
+  (5,533 files, 2.5 GB; `scripts/fetch_ecmwf_tracks.py`, paced + 503 backoff). Decoder `src/tcic/data/ecmwf_tf.py` (eccodes) →
+  data/interim/ecmwf_tf.parquet (NHC-numbered storms). Members 1–50 pf, 51 control, 52 HRES. Values identical to NHC's archived EE01–50.
+  ECMWF posts the tracks ~6 h (06/18Z) and 6.5–7.6 h (00/12Z; ~8.7 h in 2024) after the run starts: the 6-h-old run is in time.
+- **IECO** (official) = GECO construction on the 50 ECMWF members (`members.ecmwf_tf()`: BUFR from 2023, NHC archive before; newest run
+  ≥ 6 h old; `scripts/ens_ieco.py`, `docs/ensemble_ieco.md`). k = 1.2. 2018–26 (240 storms): −0.28 kt [−0.34, −0.21] vs dressed HCCA,
+  significant in every season from 2020 (2018/19: one storm each); +0.04 vs GECO (n.s.). 2025–26 vs FNV3 early: −0.74 [−1.59, +0.07]
+  (2026: −1.06*). The old IECO (our tracker, 12Z only) and its comparisons (`ens_ifs_hcca.py`, `ens_gridcentre.py`) are superseded.
+- `config.FINAL_ENSEMBLE` replaced by `PRODUCTS` (GECO, IECO → nine-season member files); loader `geco.products()`, shared `geco.dressed()`.
+  `fnv3_compare.py`, `report_figures_ens.py`, `case_plots.py` (one cycle for every panel; IECO panels for older storms too) rewritten.
+  Chain steps `ecmwf_tf`, `ieco` added; the separate 12Z case-plot file dropped.
+- Report rewritten around GECO / IECO only (21 → 12 pages; old version in git). On the common 2025–26 sample both are ~0.8 kt better than
+  FNV3 early, borderline over both seasons (GECO −0.80 [−1.65, +0.02]), significant in 2026. GECO summary updated.

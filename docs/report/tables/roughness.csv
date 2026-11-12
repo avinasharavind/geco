@@ -1,9 +1,7 @@
 Traces,Zig-zag rate,Mean |12-h change| (kt),Share of 12-h changes > 30 kt
-Best track,0.034,8.6,1.9%
-FNV3 members,0.070,9.9,4.2%
-GEFS raw members,0.014,5.1,0.3%
-IFS-ENS raw members,0.032,6.5,1.0%
-GEFS first corrected version,0.088,11.3,5.5%
-IFS-ENS first corrected version,0.103,12.5,8.3%
-GECO (GEFS),0.025,9.0,2.1%
-IECO (IFS-ENS),0.023,8.9,2.5%
+Best track,0.033,8.6,2.1%
+FNV3 members,0.072,10.1,4.4%
+Raw GEFS members,0.014,5.2,0.3%
+Raw IFS-ENS members,0.037,7.0,1.1%
+GECO (GEFS),0.025,9.1,2.2%
+IECO (IFS-ENS),0.017,8.9,2.2%

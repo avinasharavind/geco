@@ -22,7 +22,8 @@ TEST_SEASON = 2025
 PSEUDO_OPERATIONAL_SEASON = 2026
 TEST_SEASONS = (2025, 2026)  # combined held-out test (2026: working best track until NHC finalises it)
 TEST_LABEL = "2025–26"
-# final corrected ensemble per member source: our IFS-ENS is centred on the gridded consensus (scripts/ens_gridcentre.py)
-FINAL_ENSEMBLE = {"pilot_ifs": "IECO", "pilot_gefs": "GECO", "nhc_gefs": "GECO", "nhc_ecmwf": "CCSR80"}
+# the two products (src/tcic/ensemble/geco.py): name -> (model, members file in data/results/ensemble with all seasons 2018-26,
+# leads 12-120 h; written by scripts/ens_multiseason.py and scripts/ens_ieco.py)
+PRODUCTS = {"GECO": ("GEFS", "multiseason_nhc_gefs.parquet"), "IECO": ("IFS-ENS", "ieco_multiseason.parquet")}
 LEADS_H = range(12, 169, 12)  # evaluation leads, as in the paper (12-168 h)
 RI_THRESHOLD_KT = 30  # rapid intensification: >= 30 kt in 24 h

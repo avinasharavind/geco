@@ -3,6 +3,8 @@
 Two sources, same early-cycle rule as M1.5 (newest run that is old enough at t0; leads shifted by the run's age):
 - "nhc":   NHC tracker output for GEFS members AP01-30 (age 6 or 12 h, all cycles, 2018-2026) and ECMWF members EE01-50
            (age 12 or 18 h, 2020-2025; absent from 2026 real-time decks). Intensity and track only.
+- "tf":    ECMWF's own ENS tracks (BUFR, public in real time; identical to NHC's EE01-50), age 6 h at every cycle from 2023,
+           NHC's archived EE01-50 before (age 12 or 18 h). Writes members_tf_ecmwf.parquet; built by scripts/ens_ieco.py.
 - "pilot": our own tracker on the extracted IFS-ENS (51 members, 00Z runs at t0 = 12Z) and GEFS (31 members, 00Z at t0 = 06Z)
            runs, 2024-2026, with per-member structure (RMW, MSLP depth, gust, inner-core minus ring) and the run's environment.
 Storm state, targets and verification flags come from the M1.5 table (CARQ at t0, final/provisional b-deck truth).
@@ -39,12 +41,16 @@ def _long(wide_v: pd.DataFrame, wide_p: pd.DataFrame | None) -> pd.DataFrame:
     return pd.concat(out).reset_index()
 
 
-def nhc(model: str) -> pd.DataFrame:
-    members, ages = NHC_MEMBERS[model]
+def _decks(members: list[str]) -> pd.DataFrame:
     a = pd.read_parquet(INTERIM_DIR / "adecks.parquet", filters=[("tech", "in", members)], columns=["storm_id", "init", "tech", "tau", "vmax", "mslp"])
     a["storm_id"], a["tech"], a["tau"] = a["storm_id"].astype(str), a["tech"].astype(str), a["tau"].astype(int)
+    return a
+
+
+def _aged(a: pd.DataFrame, ages) -> pd.DataFrame:
+    """Member tracks (storm_id, init, tech, tau, vmax, mslp) -> long rows at t0 = init + age, newest eligible run first."""
     parts, have = [], None
-    for age in ages:  # newest eligible run first
+    for age in ages:
         e = a.assign(t0=a["init"] + pd.Timedelta(hours=age), rel=a["tau"] - age)
         e = e[e["rel"].isin(NEEDED)]
         keys = e[["storm_id", "t0"]].drop_duplicates()
@@ -57,8 +63,27 @@ def nhc(model: str) -> pd.DataFrame:
         d["age"] = age
         parts.append(d)
         have = keys if have is None else pd.concat([have, keys])
-    d = pd.concat(parts, ignore_index=True)
+    return pd.concat(parts, ignore_index=True)
+
+
+def nhc(model: str) -> pd.DataFrame:
+    members, ages = NHC_MEMBERS[model]
+    d = _aged(_decks(members), ages)
     d["source"], d["model"] = "nhc", model
+    return d
+
+
+def ecmwf_tf() -> pd.DataFrame:
+    """ECMWF ENS perturbed members from ECMWF's own BUFR tracks (data/interim/ecmwf_tf.parquet: 2023-01 on, all four runs, public in
+    real time), plus NHC's archived copies of the same tracks (EE01-50, identical values, mostly 00/12Z runs) for runs the BUFR set
+    lacks. Newest run at least 6 h old: 6 h when the 06/18Z runs exist (2023 on), else 12 or 18 h."""
+    t = pd.read_parquet(INTERIM_DIR / "ecmwf_tf.parquet", filters=[("ftype", "==", "pf")], columns=["storm_id", "init", "member", "lead", "vmax", "pmin"])
+    t = t.assign(tech="EE" + t["member"].astype(str).str.zfill(2), tau=t["lead"].astype(int)).rename(columns={"pmin": "mslp"})
+    t = t[["storm_id", "init", "tech", "tau", "vmax", "mslp"]]
+    a = _decks(NHC_MEMBERS["ecmwf"][0])
+    a = a.merge(t[["storm_id", "init"]].drop_duplicates(), how="left", indicator=True).query("_merge == 'left_only'").drop(columns="_merge")
+    d = _aged(pd.concat([t, a], ignore_index=True), (6, 12, 18))
+    d["source"], d["model"] = "tf", "ecmwf"
     return d
 
 
@@ -104,7 +129,7 @@ def finish(d: pd.DataFrame) -> pd.DataFrame:
 
 
 def build(source: str, model: str) -> pd.DataFrame:
-    d = finish(nhc(model) if source == "nhc" else pilot(model))
+    d = finish({"nhc": nhc, "pilot": pilot, "tf": lambda m: ecmwf_tf()}[source](model))
     d.to_parquet(FEATURES_DIR / f"members_{source}_{model}.parquet", index=False)
     return d
 
