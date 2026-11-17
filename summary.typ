@@ -16,7 +16,10 @@
   #text(15pt, weight: "bold")[Correcting Numerical Weather Model Ensembles for
                                 
                             Tropical Cyclone Intensity Prediction]
-  #v(0.25em)
+  #v(0.2em)
+  #text(10pt)[Avinash Aravind]
+  #v(0.05em)
+  #text(8pt)[Cornell University, Department of Earth and Atmospheric Science]
 ]
 #v(0.6em)
 
@@ -28,8 +31,8 @@ deterministic forecast to save on compute costs. However, disregarding these ens
 present in a TC intensity forecast, ultimately weakening the information a forecaster has on hand to develop their prediction.
 
 In this work, we present a framework for correcting these global NWP ensembles to produce a suite of realistic TC intensity forecasts while maintaining the
-forecast uncertainty information in the perturbed members. We use this framework to introduce two new forecast systems: GECO, the GFS Ensemble, Consensus-Oriented,
-and IECO, the IFS Ensemble, Consensus-Oriented. Both systems show competitive results alongside the state-of-the-art ensemble forecast system (Google DeepMind's FNV3)
+forecast uncertainty information in the perturbed members. We use this framework to introduce two new forecast systems: GECO, the GFS Ensemble Corrected Output,
+and IECO, the IFS Ensemble Corrected Ouptut. Both systems show competitive results alongside the state-of-the-art ensemble forecast system (Google DeepMind's FNV3)
 with superior ensemble member spread and more physically consistent members, providing valuable information to forecasters about probabilistically extreme outcomes
 for a given TC intensity forecast.
 
@@ -59,7 +62,7 @@ m and its modeled forecast intensity at timestep i $m_i$, along with the HCCA me
 
 $C_(m,i) = H_i + k * sigma_i * m_i$. 
 
-This process is repeated for all ensemble members, separately for both ensembles, to produce the new corrected forecast product.
+This process is repeated for all ensemble members, separately for both ensembles, to produce a new corrected forecast.
 #v(0.6em)
 
 = Real-Time Application
@@ -68,6 +71,7 @@ This framework is designed to operate entirely with near-real-time information, 
 IFS-ENS forecasts take closer to 9 hours, meaning these corrected ensembles will become available approximately 9 hours and 12 hours after model initialization time, respectively.
 While an operational implementation of GECO and IECO are not yet available, our intention is to make this available soon.
 // ------------------------------------------------------------------ 1
+#v(0.6em)
 = Results
 To validate GECO and IECO, we compare its performance against a probabilistic "HCCA-ENS" (created by generating members from a Normal distribution centered on the HCCA whose standard deviation 
 is the HCCA's error over the training period, 2018-2024), and against the FNV3 in 2025 and 2026 when the latter is present. Our primary metric is CRPS, an extension of MAE for ensemble 
@@ -93,12 +97,12 @@ divided by the RMSE of HCCA). For the "track behavior" columns, numbers closer t
         table.cell(colspan: 4)[*2025–26*],
         table.cell(colspan: 2)[*Trace Behavior, 2025–26*],
         table.hline(start: 1, end: 9, stroke: 0.4pt),
-        [CRPS], [− dressed HCCA], [CRPS], [− FNV3], [Bias], [Spread / error], [Zig-zag rate], [Mean |12-h Δv|],
+        [CRPS], [− "HCCA-ENS"], [CRPS], [− FNV3], [Bias], [Spread / error], [Zig-zag rate], [Mean |12-h Δv|],
       ),
       table.hline(stroke: 0.5pt),
       [*GECO* (GEFS)], [*7.04*#super[a]], [−0.36#sig], [*7.59*], [−0.80#super[c]], [−1.2], [0.87], [0.025], [9.1],
       [*IECO* (IFS-ENS)], [*7.19*#super[b]], [−0.28#sig], [*7.64*], [−0.74#super[c]], [−1.3], [0.87], [0.017], [8.9],
-      [Dressed HCCA], [7.39#super[a] / 7.46#super[b]], [], [7.93], [], [−1.2], [0.96], [—], [—],
+      ["HCCA-ENS"], [7.39#super[a] / 7.46#super[b]], [], [7.93], [], [−1.2], [0.96], [—], [—],
       [FNV3 (early)], [—], [], [8.39], [], [−6.0], [0.69], [0.072], [10.1],
       [Raw GEFS], [19.49#super[a]], [], [22.64], [], [−25.5], [0.20], [0.014], [5.2],
       [Raw IFS-ENS], [17.58#super[b]], [], [16.94], [], [−20.7], [0.43], [0.037], [7.0],
@@ -116,7 +120,18 @@ divided by the RMSE of HCCA). For the "track behavior" columns, numbers closer t
 
   Zig-zag rate: two consecutive 12-h changes of opposite sign, each ≥ 10 kt],
 )
-
+#v(0.6em)
+In terms of CRPS, the GECO and IECO systems are better to a statistically significant degree compared to the probabilistic "HCCA-ENS" and
+is on par with or better (better but not significant) compared to Google DeepMind's FNV3. Compared to the FNV3, both GECO and IECO are less
+biased and the spread between ensemble members better captures the error in HCCA, increasing a forecaster's confidence that the ensemble spread
+includes the likely future outcome. 
+#v(0.1em)
+A common comment on FNV3 forecast traces is their physical consistency; namely, forecast intensities occasionally change wildly between forecast points,
+both "jumping" large intensity changes in a short amount of time and "zig-zagging" between positive and negative changes. GECO and IECO improve here too, 
+with the 18-hour smoothing parameter bringing both metrics closer to their true occurance rate in Best Track data. 
+#v(0.6em)
 = Case Studies
 Several case studies were also investiaged; below is a figure for one from Hurricane Erin (N. Atlantic, 2025)
 #figure(image("docs/report/figures/fig_case_1.svg", width: 100%), caption: [Hurricane Erin, 14 August 2025, two days before its rapid intensification.])
+
+
